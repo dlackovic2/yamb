@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="612" height="458" viewBox="0 0 612 458" fill="none">
+  <defs>
+    <linearGradient id="diceShade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="rgba(15,23,42,0.08)" />
+      <stop offset="1" stop-color="rgba(15,23,42,0.18)" />
+    </linearGradient>
+    <filter id="roughen" x="-5%" y="-5%" width="110%" height="110%" filterUnits="objectBoundingBox">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </defs>
+  <g stroke="#0f172a" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" filter="url(#roughen)">
+    <g>
+      <polygon fill="url(#diceShade)" points="124 212 266 198 268 336 108 352 58 248 124 212" />
+      <polygon fill="rgba(15,23,42,0.06)" points="124 212 182 154 340 148 266 198" />
+      <polygon fill="rgba(15,23,42,0.04)" points="182 154 340 148 356 290 268 336" />
+      <circle cx="154" cy="244" r="12" fill="#0f172a" />
+      <circle cx="214" cy="240" r="12" fill="#0f172a" />
+      <circle cx="224" cy="306" r="12" fill="#0f172a" />
+      <circle cx="166" cy="310" r="12" fill="#0f172a" />
+      <path d="M92 260 L140 352" opacity="0.4" />
+      <path d="M214 182 L120 220" opacity="0.3" />
+    </g>
+    <g>
+      <polygon fill="url(#diceShade)" points="360 186 470 170 512 204 502 344 376 356 324 214 360 186" />
+      <polygon fill="rgba(15,23,42,0.06)" points="360 186 430 126 544 130 470 170" />
+      <polygon fill="rgba(15,23,42,0.04)" points="430 126 544 130 560 268 502 344" />
+      <circle cx="398" cy="226" r="11" fill="#0f172a" />
+      <circle cx="454" cy="220" r="11" fill="#0f172a" />
+      <circle cx="486" cy="266" r="11" fill="#0f172a" />
+      <circle cx="432" cy="280" r="11" fill="#0f172a" />
+      <circle cx="466" cy="318" r="11" fill="#0f172a" />
+      <path d="M430 132 L372 192" opacity="0.4" />
+      <path d="M520 196 L382 212" opacity="0.35" />
+    </g>
+  </g>
+</svg>

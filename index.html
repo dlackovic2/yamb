@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<!-- With 💕 Bubu&Dudu -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yamb Scorekeeper</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <div class="parallax-scene" data-parallax-scene>
+      <div class="parallax-layer parallax-layer-back" data-depth="0.08"></div>
+      <div class="parallax-layer parallax-layer-mid" data-depth="0.16"></div>
+      <div class="parallax-layer parallax-layer-front" data-depth="0.28"></div>
+    </div>
+    <div class="gradient"></div>
+    <header class="app-header">
+      <div class="title-group">
+        <h1>Yamb Scorekeeper</h1>
+        <p>Log your rolls, we handle the math.</p>
+      </div>
+      <div class="actions">
+        <button id="reset-all" class="ghost action-button">
+          <span class="action-label">New sheet</span>
+        </button>
+        <button id="settings-button" class="ghost icon-button" aria-label="Open settings">
+          <span class="icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M195.1 9.5C198.1-5.3 211.2-16 226.4-16l59.8 0c15.2 0 28.3 10.7 31.3 25.5L332 79.5c14.1 6 27.3 13.7 39.3 22.8l67.8-22.5c14.4-4.8 30.2 1.2 37.8 14.4l29.9 51.8c7.6 13.2 4.9 29.8-6.5 39.9L447 233.3c.9 7.4 1.3 15 1.3 22.7s-.5 15.3-1.3 22.7l53.4 47.5c11.4 10.1 14 26.8 6.5 39.9l-29.9 51.8c-7.6 13.1-23.4 19.2-37.8 14.4l-67.8-22.5c-12.1 9.1-25.3 16.7-39.3 22.8l-14.4 69.9c-3.1 14.9-16.2 25.5-31.3 25.5l-59.8 0c-15.2 0-28.3-10.7-31.3-25.5l-14.4-69.9c-14.1-6-27.2-13.7-39.3-22.8L73.5 432.3c-14.4 4.8-30.2-1.2-37.8-14.4L5.8 366.1c-7.6-13.2-4.9-29.8 6.5-39.9l53.4-47.5c-.9-7.4-1.3-15-1.3-22.7s.5-15.3 1.3-22.7L12.3 185.8c-11.4-10.1-14-26.8-6.5-39.9L35.7 94.1c7.6-13.2 23.4-19.2 37.8-14.4l67.8 22.5c12.1-9.1 25.3-16.7 39.3-22.8L195.1 9.5zM256.3 336a80 80 0 1 0 -.6-160 80 80 0 1 0 .6 160z"/></svg>
+          </span>
+        </button>
+        <label class="switch" aria-label="Toggle dark mode">
+          <span class="switch-icon switch-icon-sun" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path d="M178.2-10.1c7.4-3.1 15.8-2.2 22.5 2.2l87.8 58.2 87.8-58.2c6.7-4.4 15.1-5.2 22.5-2.2S411.4-.5 413 7.3l20.9 103.2 103.2 20.9c7.8 1.6 14.4 7 17.4 14.3s2.2 15.8-2.2 22.5l-58.2 87.8 58.2 87.8c4.4 6.7 5.2 15.1 2.2 22.5s-9.6 12.8-17.4 14.3L433.8 401.4 413 504.7c-1.6 7.8-7 14.4-14.3 17.4s-15.8 2.2-22.5-2.2l-87.8-58.2-87.8 58.2c-6.7 4.4-15.1 5.2-22.5 2.2s-12.8-9.6-14.3-17.4L143 401.4 39.7 380.5c-7.8-1.6-14.4-7-17.4-14.3s-2.2-15.8 2.2-22.5L82.7 256 24.5 168.2c-4.4-6.7-5.2-15.1-2.2-22.5s9.6-12.8 17.4-14.3L143 110.6 163.9 7.3c1.6-7.8 7-14.4 14.3-17.4zM207.6 256a80.4 80.4 0 1 1 160.8 0 80.4 80.4 0 1 1 -160.8 0zm208.8 0a128.4 128.4 0 1 0 -256.8 0 128.4 128.4 0 1 0 256.8 0z"/></svg>
+          </span>
+          <input type="checkbox" id="theme-toggle" aria-label="Toggle dark mode" />
+          <span class="slider"></span>
+          <span class="switch-icon switch-icon-moon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 0C114.6 0 0 114.6 0 256S114.6 512 256 512c68.8 0 131.3-27.2 177.3-71.4 7.3-7 9.4-17.9 5.3-27.1s-13.7-14.9-23.8-14.1c-4.9 .4-9.8 .6-14.8 .6-101.6 0-184-82.4-184-184 0-72.1 41.5-134.6 102.1-164.8 9.1-4.5 14.3-14.3 13.1-24.4S322.6 8.5 312.7 6.3C294.4 2.2 275.4 0 256 0z"/></svg>
+          </span>
+        </label>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="scorecard" aria-label="Yamb score table">
+        <header class="section-header">
+          <h2>Score table</h2>
+          <p>Tap a cell to enter or adjust a result. Totals update automatically.</p>
+        </header>
+        <div class="table-wrap">
+          <table id="score-table">
+            <thead>
+              <tr>
+                <th scope="col">Category</th>
+                <th scope="col" data-column="down">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M297.4 566.6C309.9 579.1 330.2 579.1 342.7 566.6L502.7 406.6C515.2 394.1 515.2 373.8 502.7 361.3C490.2 348.8 469.9 348.8 457.4 361.3L352 466.7L352 96C352 78.3 337.7 64 320 64C302.3 64 288 78.3 288 96L288 466.7L182.6 361.3C170.1 348.8 149.8 348.8 137.3 361.3C124.8 373.8 124.8 394.1 137.3 406.6L297.3 566.6z"/></svg>
+                  <span class="sr-only">Down column</span>
+                </th>
+                <th scope="col" data-column="up">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M342.6 81.4C330.1 68.9 309.8 68.9 297.3 81.4L137.3 241.4C124.8 253.9 124.8 274.2 137.3 286.7C149.8 299.2 170.1 299.2 182.6 286.7L288 181.3L288 552C288 569.7 302.3 584 320 584C337.7 584 352 569.7 352 552L352 181.3L457.4 286.7C469.9 299.2 490.2 299.2 502.7 286.7C515.2 274.2 515.2 253.9 502.7 241.4L342.7 81.4z"/></svg>
+                  <span class="sr-only">Up column</span>
+                </th>
+                <th scope="col" data-column="free">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M342.6 41.4C330.1 28.9 309.8 28.9 297.3 41.4L201.3 137.4C188.8 149.9 188.8 170.2 201.3 182.7C213.8 195.2 234.1 195.2 246.6 182.7L288 141.3L288 498.7L246.6 457.4C234.1 444.9 213.8 444.9 201.3 457.4C188.8 469.9 188.8 490.2 201.3 502.7L297.3 598.7C303.3 604.7 311.4 608.1 319.9 608.1C328.4 608.1 336.5 604.7 342.5 598.7L438.5 502.7C451 490.2 451 469.9 438.5 457.4C426 444.9 405.7 444.9 393.2 457.4L351.8 498.8L351.8 141.3L393.2 182.7C405.7 195.2 426 195.2 438.5 182.7C451 170.2 451 149.9 438.5 137.4L342.5 41.4z"/></svg>
+                  <span class="sr-only">Free column</span>
+                </th>
+                <th scope="col" data-column="announce">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path d="M525.2 82.9C536.7 88 544 99.4 544 112L544 528C544 540.6 536.7 552 525.2 557.1C513.7 562.2 500.4 560.3 490.9 552L444.3 511.3C400.7 473.2 345.6 451 287.9 448.3L287.9 544C287.9 561.7 273.6 576 255.9 576L223.9 576C206.2 576 191.9 561.7 191.9 544L191.9 448C121.3 448 64 390.7 64 320C64 249.3 121.3 192 192 192L276.5 192C338.3 191.8 397.9 169.3 444.4 128.7L491 88C500.4 79.7 513.9 77.8 525.3 82.9zM288 384L288 384.2C358.3 386.9 425.8 412.7 480 457.6L480 182.3C425.8 227.2 358.3 253 288 255.7L288 384z"/></svg>
+                  <span class="sr-only">Announce column</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr class="grand-total-row">
+                <th scope="row" colspan="4">Grand total</th>
+                <td id="overall-grand-total">0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <aside class="summary-panel" aria-label="Column summaries">
+        <header class="section-header">
+          <h2>Quick stats</h2>
+          <p>Understand where each column stands at a glance.</p>
+        </header>
+        <ul id="summary-list" class="summary-list"></ul>
+        <div class="note">
+          <h3>How scoring works</h3>
+          <p>
+            We follow the classic Yamb sheet: the bonus kicks in at 60 points on ones–sixes,
+            and the difference score multiplies <strong>(Max − Min)</strong> by the number of ones in the same column.
+          </p>
+        </div>
+      </aside>
+    </main>
+
+    <dialog id="export-dialog" class="app-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Export data</h2>
+          <button value="cancel" aria-label="Close export dialog">×</button>
+        </header>
+        <label class="dialog-label" for="export-textarea">Copy your game state</label>
+        <textarea id="export-textarea" readonly></textarea>
+        <footer class="dialog-footer">
+          <button value="ok" class="primary">Done</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="info-dialog" class="app-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="info-dialog-title">Tip</h2>
+          <button value="cancel" aria-label="Close info dialog">×</button>
+        </header>
+        <div class="dialog-body" id="info-dialog-body"></div>
+        <footer class="dialog-footer">
+          <button value="ok" class="primary">Got it</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="straight-dialog" class="app-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="straight-dialog-title">Select straight type</h2>
+          <button value="cancel" aria-label="Close straight dialog">×</button>
+        </header>
+        <div class="dialog-body">
+          <p id="straight-dialog-description">Choose which straight you scored for this column.</p>
+          <div class="option-grid">
+            <button type="button" data-value="35" class="option-card">
+              <span class="option-title">Small straight</span>
+              <span class="option-subtitle">1 • 2 • 3 • 4 • 5 → 35 pts</span>
+            </button>
+            <button type="button" data-value="45" class="option-card">
+              <span class="option-title">Big straight</span>
+              <span class="option-subtitle">2 • 3 • 4 • 5 • 6 → 45 pts</span>
+            </button>
+            <button type="button" data-value="0" class="option-card ghost">
+              <span class="option-title">Missed straight</span>
+              <span class="option-subtitle">No straight → 0 pts</span>
+            </button>
+          </div>
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="announce-dialog" class="app-dialog announce-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="announce-dialog-title">Announce roll</h2>
+          <button value="cancel" aria-label="Close announce dialog">×</button>
+        </header>
+        <div class="dialog-body announce-dialog-body">
+          <div class="announce-roller" id="announce-roller" aria-hidden="true"></div>
+          <p id="announce-dialog-message" class="announce-dialog-message">
+            Waiting for your announced roll. Enter the score once you're ready.
+          </p>
+          <label class="dialog-label" for="announce-dialog-input">Enter announced score</label>
+          <input
+            id="announce-dialog-input"
+            type="number"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            min="0"
+            step="1"
+            placeholder="e.g. 30"
+          />
+        </div>
+        <footer class="dialog-footer announce-dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+          <div class="announce-dialog-actions">
+            <button value="clear" class="ghost" id="announce-dialog-clear" type="button">Clear</button>
+            <button value="confirm" class="primary">Save</button>
+          </div>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="app-dialog settings-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Settings</h2>
+          <button value="cancel" aria-label="Close settings dialog">×</button>
+        </header>
+        <div class="dialog-body settings-dialog-body">
+          <div
+            class="settings-action settings-toggle"
+            role="group"
+            aria-labelledby="wake-lock-title"
+            aria-describedby="wake-lock-subtitle"
+          >
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation" focusable="false">
+                <path
+                  d="M4 5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-3l1.2 2.4a1 1 0 0 1-.9 1.6H9.7a1 1 0 0 1-.9-1.6L10 17H7a3 3 0 0 1-3-3V5Zm3-1a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="settings-action-text">
+              <span class="settings-action-title" id="wake-lock-title">Keep screen awake</span>
+              <span class="settings-action-subtitle" id="wake-lock-subtitle">
+                Prevent the display from locking while you score.
+              </span>
+            </span>
+            <div class="settings-toggle-control">
+              <label class="switch" aria-label="Toggle keep screen awake">
+                <input type="checkbox" id="wake-lock-toggle" aria-labelledby="wake-lock-title" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <p class="settings-toggle-note" id="wake-lock-support-note" hidden>
+            Screen wake lock isn’t supported on this device yet.
+          </p>
+          <button type="button" class="settings-action" data-settings-action="export">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation" focusable="false">
+                <path
+                  d="M12 3a1 1 0 0 1 1 1v7.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42L11 11.59V4a1 1 0 0 1 1-1Zm-7 13a1 1 0 0 1 1 1v2h12v-2a1 1 0 1 1 2 0v3a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="settings-action-text">
+              <span class="settings-action-title">Export sheet</span>
+              <span class="settings-action-subtitle">Copy or download your current scores</span>
+            </span>
+          </button>
+          <button type="button" class="settings-action" data-settings-action="import">
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation" focusable="false">
+                <path
+                  d="M12 21a1 1 0 0 1-1-1v-7.59l-2.3 2.3a1 1 0 0 1-1.4-1.42l4-4a1 1 0 0 1 1.4 0l4 4a1 1 0 0 1-1.4 1.42L13 12.41V20a1 1 0 0 1-1 1ZM5 5a1 1 0 0 1-1-1V1h16v3a1 1 0 1 1-2 0V3H6v1a1 1 0 0 1-1 1Z"
+                ></path>
+              </svg>
+            </span>
+            <span class="settings-action-text">
+              <span class="settings-action-title">Import sheet</span>
+              <span class="settings-action-subtitle">Paste a saved JSON export to continue</span>
+            </span>
+          </button>
+        </div>
+        <footer class="dialog-footer settings-dialog-footer">
+          <button value="cancel" class="ghost">Close</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog" class="app-dialog import-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Import data</h2>
+          <button value="cancel" aria-label="Close import dialog">×</button>
+        </header>
+        <label class="dialog-label" for="import-textarea">Paste the exported JSON below</label>
+        <textarea id="import-textarea" placeholder="{ &quot;state&quot;: { ... } }"></textarea>
+        <footer class="dialog-footer import-dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="confirm" class="primary">Import</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="reset-dialog" class="app-dialog reset-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Start a fresh sheet?</h2>
+          <button value="cancel" aria-label="Close reset dialog">×</button>
+        </header>
+        <div class="dialog-body reset-dialog-body">
+          <p>
+            This will clear every column and return the sheet to its initial state. Make sure you've
+            exported anything you want to keep first.
+          </p>
+        </div>
+        <footer class="dialog-footer reset-dialog-footer">
+          <button value="cancel" class="ghost">Keep current sheet</button>
+          <button value="confirm" class="primary">Start fresh</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="completion-dialog" class="app-dialog completion-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="completion-dialog-title">Sheet complete!</h2>
+          <button value="cancel" aria-label="Close completion dialog">×</button>
+        </header>
+        <div class="dialog-body completion-dialog-body">
+          <div class="confetti-stage" id="confetti-stage" aria-hidden="true"></div>
+          <p id="completion-message" class="completion-message">Fantastic run! Here's how your columns stacked up:</p>
+          <ul id="completion-summary" class="completion-summary"></ul>
+        </div>
+        <footer class="dialog-footer completion-dialog-footer">
+          <button value="ok" class="primary">Close</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script type="module" src="./scripts/app.js"></script>
+  </body>
+</html>
