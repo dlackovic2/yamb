@@ -26,6 +26,9 @@
         <p>Log your rolls, we handle the math.</p>
       </div>
       <div class="actions">
+        <button id="game-mode-button" class="ghost action-button">
+          <span class="action-label">Game Mode</span>
+        </button>
         <button id="reset-all" class="ghost action-button">
           <span class="action-label">New sheet</span>
         </button>
@@ -191,6 +194,26 @@
       </form>
     </dialog>
 
+    <dialog id="virtual-announce-select-dialog" class="app-dialog virtual-announce-dialog">
+      <form method="dialog">
+        <header>
+          <h2>📢 Select Category to Announce</h2>
+          <button value="cancel" aria-label="Close">×</button>
+        </header>
+        <div class="dialog-body">
+          <p class="dialog-instructions">
+            Choose which category you want to announce for the Announce column:
+          </p>
+          <div id="virtual-announce-categories" class="announce-category-list">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+        </footer>
+      </form>
+    </dialog>
+
     <dialog id="settings-dialog" class="app-dialog settings-dialog">
       <form method="dialog">
         <header>
@@ -311,6 +334,102 @@
       </form>
     </dialog>
 
+    <dialog id="game-mode-dialog" class="app-dialog game-mode-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Game Setup</h2>
+          <button value="cancel" aria-label="Close game mode dialog">×</button>
+        </header>
+        <div class="dialog-body">
+          <div class="game-mode-selection">
+            <div class="mode-group">
+              <h3>Game Location</h3>
+              <div class="mode-options">
+                <label class="mode-option" data-mode="location" data-value="local">
+                  <input type="radio" name="location" value="local" checked />
+                  <div class="mode-option-icon">🏠</div>
+                  <div class="mode-option-label">Local</div>
+                  <div class="mode-option-description">Play on this device</div>
+                </label>
+                <label class="mode-option" data-mode="location" data-value="online">
+                  <input type="radio" name="location" value="online" />
+                  <div class="mode-option-icon">🌐</div>
+                  <div class="mode-option-label">Online</div>
+                  <div class="mode-option-description">Play with remote friends</div>
+                </label>
+              </div>
+            </div>
+
+            <div class="mode-group">
+              <h3>Dice Type</h3>
+              <div class="mode-options">
+                <label class="mode-option" data-mode="dice" data-value="physical">
+                  <input type="radio" name="dice" value="physical" checked />
+                  <div class="mode-option-icon">🎲</div>
+                  <div class="mode-option-label">Physical</div>
+                  <div class="mode-option-description">Use real dice</div>
+                </label>
+                <label class="mode-option" data-mode="dice" data-value="virtual">
+                  <input type="radio" name="dice" value="virtual" />
+                  <div class="mode-option-icon">💻</div>
+                  <div class="mode-option-label">Virtual</div>
+                  <div class="mode-option-description">Roll on screen</div>
+                </label>
+              </div>
+            </div>
+
+            <div class="mode-group" id="online-options" style="display: none;">
+              <h3>Online Setup</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <label>
+                  <span style="font-size: 0.85rem; color: var(--text-weak);">Your Name</span>
+                  <input type="text" id="player-name-input" placeholder="Enter your name" 
+                         style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.95rem;" />
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <button type="button" id="create-room-btn" class="primary" style="width: 100%;">Create Room</button>
+                  <button type="button" id="join-room-btn" class="primary" style="width: 100%;">Join Room</button>
+                </div>
+                <div id="room-code-section" style="display: none;">
+                  <label>
+                    <span style="font-size: 0.85rem; color: var(--text-weak);">Room Code</span>
+                    <input type="text" id="room-code-input" placeholder="Enter 6-character code" maxlength="6"
+                           style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.2em; text-align: center;" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="confirm" class="primary" id="start-game-btn">Start Game</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="virtual-dice-dialog" class="app-dialog virtual-dice-dialog" style="max-width: 700px;">
+      <form method="dialog">
+        <header>
+          <h2>Virtual Dice</h2>
+          <button value="cancel" aria-label="Close virtual dice dialog">×</button>
+        </header>
+        <div class="dialog-body" id="virtual-dice-container">
+          <!-- Virtual dice UI will be inserted here -->
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Close</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Sticky back to virtual dice button (mobile only) -->
+    <button id="back-to-dice-button" class="back-to-dice-fab" aria-label="Scroll back to virtual dice">
+      🎲
+      <span class="fab-label">Back to Dice</span>
+    </button>
+
     <script type="module" src="./scripts/app.js"></script>
   </body>
 </html>
+

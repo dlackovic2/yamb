@@ -8,6 +8,8 @@ import {
   getValidationMessage
 } from "./scoring.js";
 
+import { gameModeManager } from "./gameModeManager.js";
+
 const STORAGE_KEY = "yamb-scorekeeper-v1";
 const THEME_KEY = "yamb-scorekeeper-theme";
 
@@ -62,17 +64,18 @@ const prefersDesktopInteraction =
     ? !window.matchMedia("(pointer: coarse)").matches
     : true;
 
-const parallaxScene = document.querySelector("[data-parallax-scene]");
-const parallaxLayers = parallaxScene ? Array.from(parallaxScene.querySelectorAll("[data-depth]")) : [];
-const prefersReducedMotionQuery =
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)")
-    : null;
-const parallaxState = {
-  scrollY: 0,
-  ticking: false
-};
-let parallaxEnabled = false;
+// Parallax disabled - keeping elements for static background only
+// const parallaxScene = document.querySelector("[data-parallax-scene]");
+// const parallaxLayers = parallaxScene ? Array.from(parallaxScene.querySelectorAll("[data-depth]")) : [];
+// const prefersReducedMotionQuery =
+//   typeof window !== "undefined" && typeof window.matchMedia === "function"
+//     ? window.matchMedia("(prefers-reduced-motion: reduce)")
+//     : null;
+// const parallaxState = {
+//   scrollY: 0,
+//   ticking: false
+// };
+// let parallaxEnabled = false;
 
 const WAKE_LOCK_STORAGE_KEY = "yamb-keep-awake";
 const AudioContextClass =
@@ -174,6 +177,8 @@ const sequentialErrorMessages = {
   up: "Up column must be filled from bottom to top without skipping categories."
 };
 
+// Parallax functions disabled - background is now static
+/*
 function applyParallaxTransforms() {
   parallaxState.ticking = false;
   if (!parallaxEnabled || !parallaxScene) return;
@@ -248,6 +253,7 @@ function setupParallaxScene() {
     setParallaxEnabled(true);
   }
 }
+*/
 
 const inputCategories = categories.filter((category) => category.input);
 
@@ -453,6 +459,18 @@ registerDialog(completionDialog, {
     clearConfetti();
   }
 });
+
+// Register game mode dialog
+const gameModeDialog = document.getElementById('game-mode-dialog');
+registerDialog(gameModeDialog);
+
+// Register virtual dice dialog
+const virtualDiceDialog = document.getElementById('virtual-dice-dialog');
+registerDialog(virtualDiceDialog);
+
+// Register virtual announce select dialog (from virtualDiceUI)
+const virtualAnnounceDialog = document.getElementById('virtual-announce-select-dialog');
+registerDialog(virtualAnnounceDialog);
 
 if (announceDialogClear) {
   announceDialogClear.addEventListener("click", () => {
@@ -717,12 +735,141 @@ function triggerAnnounceAudio(category, column) {
   speakAnnouncement(category, column);
 }
 
-setupParallaxScene();
+// Parallax disabled - background is now static
+// setupParallaxScene();
 renderTable();
 restoreTheme();
 updateUI();
 attachEvents();
 setupWakeLockControl();
+setupBackToDiceButton();
+
+// Pass setScore callback to gameModeManager to avoid circular dependency
+gameModeManager.setSetScoreCallback(setScore);
+
+// Initialize game mode on page load
+if (gameModeManager.isVirtualMode()) {
+  gameModeManager.showVirtualDicePanel();
+  gameModeManager.disableScorecardInputs();
+}
+
+/**
+ * Setup the "Back to Virtual Dice" floating action button
+ * Shows on mobile when scrolled past the virtual dice panel
+ */
+function setupBackToDiceButton() {
+  const backButton = document.getElementById('back-to-dice-button');
+  if (!backButton) return;
+  
+  let scrollTimeout;
+  let isVirtualMode = false;
+  let isScrollingToPanel = false; // Flag to prevent showing during scroll animation
+  
+  // Check if we're in virtual mode
+  const checkVirtualMode = () => {
+    isVirtualMode = gameModeManager && gameModeManager.isVirtualMode();
+    return isVirtualMode;
+  };
+  
+  // Update button visibility based on scroll position
+  const updateButtonVisibility = () => {
+    // Don't show button if we're currently scrolling to panel
+    if (isScrollingToPanel) {
+      backButton.classList.remove('visible');
+      return;
+    }
+    
+    // Always check current mode first
+    const inVirtualMode = checkVirtualMode();
+    
+    if (!inVirtualMode) {
+      backButton.classList.remove('visible');
+      return;
+    }
+    
+    const virtualPanel = document.getElementById('virtual-dice-main-panel');
+    if (!virtualPanel || virtualPanel.style.display === 'none') {
+      backButton.classList.remove('visible');
+      return;
+    }
+    
+    // Get the bottom position of the virtual dice panel
+    const panelRect = virtualPanel.getBoundingClientRect();
+    const panelBottom = panelRect.bottom;
+    
+    // Show button if we've scrolled past the virtual dice panel
+    // Reduced buffer to 50px so it appears sooner
+    if (panelBottom < 50) {
+      backButton.classList.add('visible');
+    } else {
+      backButton.classList.remove('visible');
+    }
+  };
+  
+  // Handle scroll events with throttling
+  const handleScroll = () => {
+    if (scrollTimeout) {
+      window.cancelAnimationFrame(scrollTimeout);
+    }
+    scrollTimeout = window.requestAnimationFrame(() => {
+      updateButtonVisibility();
+    });
+  };
+  
+  // Handle button click - scroll to virtual dice panel
+  backButton.addEventListener('click', () => {
+    const virtualPanel = document.getElementById('virtual-dice-main-panel');
+    if (!virtualPanel) return;
+    
+    // Set flag to prevent button from showing during scroll
+    isScrollingToPanel = true;
+    backButton.classList.remove('visible');
+    
+    const panelTop = virtualPanel.getBoundingClientRect().top + window.pageYOffset;
+    const offset = 20; // Small offset from top
+    
+    window.scrollTo({
+      top: panelTop - offset,
+      behavior: 'smooth'
+    });
+    
+    // Reset flag after scroll animation completes (smooth scroll takes ~500-800ms)
+    setTimeout(() => {
+      isScrollingToPanel = false;
+    }, 1000);
+  });
+  
+  // Listen to scroll events
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Initial check after a short delay to allow virtual panel to be created
+  setTimeout(() => {
+    updateButtonVisibility();
+  }, 100);
+  
+  // Re-check when game mode might change
+  const observer = new MutationObserver(() => {
+    // Debounce the update
+    setTimeout(updateButtonVisibility, 50);
+  });
+  
+  // Watch for changes in the layout (e.g., virtual panel being added/removed)
+  const layout = document.querySelector('.layout');
+  if (layout) {
+    observer.observe(layout, {
+      childList: true,
+      subtree: false
+    });
+  }
+  
+  // Also check on window resize (viewport changes)
+  window.addEventListener('resize', () => {
+    if (scrollTimeout) {
+      window.cancelAnimationFrame(scrollTimeout);
+    }
+    scrollTimeout = window.requestAnimationFrame(updateButtonVisibility);
+  }, { passive: true });
+}
 
 function renderTable() {
   tableBody.innerHTML = "";
@@ -843,6 +990,11 @@ function renderTable() {
 }
 
 function attachEvents() {
+  const gameModeButton = document.getElementById("game-mode-button");
+  gameModeButton?.addEventListener("click", () => {
+    gameModeManager.showGameModeDialog();
+  });
+
   resetButton?.addEventListener("click", openResetDialog);
 
   settingsButton?.addEventListener("click", openSettingsDialog);
@@ -1025,6 +1177,13 @@ function commitInput(input) {
 
 function openStraightDialogForInput(input) {
   if (!(input instanceof HTMLInputElement)) return;
+  
+  // Check if virtual dice mode is active
+  if (gameModeManager && gameModeManager.shouldUseVirtualDice()) {
+    // Virtual dice mode - don't open dialog, inputs are disabled
+    return;
+  }
+  
   const columnKey = input.dataset.column;
   const column = columns.find((item) => item.key === columnKey);
   const shouldAnnounce = column?.key === "announce";
@@ -1153,6 +1312,14 @@ function openAnnounceDialogForInput(input) {
 function handleAnnounceTrigger(event) {
   const input = event.currentTarget;
   if (!(input instanceof HTMLInputElement)) return;
+  
+  // Check if virtual dice mode is active
+  if (gameModeManager && gameModeManager.shouldUseVirtualDice()) {
+    // Virtual dice mode - don't open dialog, inputs are disabled
+    event.preventDefault();
+    return;
+  }
+  
   openAnnounceDialogForInput(input);
 }
 
@@ -1659,4 +1826,57 @@ function applyTheme(theme) {
   } else {
     root.removeAttribute("data-theme");
   }
+}
+
+/**
+ * Public API for programmatically setting scores (used by virtual dice)
+ * @param {string} categoryKey - The category key (e.g., 'ones', 'tris', 'full')
+ * @param {string} columnKey - The column key (e.g., 'down', 'up', 'free', 'announce')
+ * @param {number} value - The score value
+ * @returns {boolean} - True if successful, false if validation failed
+ */
+export function setScore(categoryKey, columnKey, value) {
+  if (!columnKey || !categoryKey) {
+    console.error('Invalid category or column key');
+    return false;
+  }
+
+  const columnState = state[columnKey] ?? (state[columnKey] = {});
+  const numeric = Number(value);
+  
+  if (!Number.isFinite(numeric)) {
+    console.error('Invalid numeric value:', value);
+    return false;
+  }
+
+  if (!isCategoryValueAllowed(categoryKey, numeric)) {
+    console.error('Value not allowed for category:', categoryKey, numeric);
+    return false;
+  }
+
+  const sequentialIssue = getSequentialFailure(columnKey, categoryKey, columnState);
+  if (sequentialIssue) {
+    console.error('Sequential validation failed:', sequentialIssue.message);
+    return false;
+  }
+
+  // Set the value in state
+  columnState[categoryKey] = numeric;
+  
+  // Update the input element to reflect the change
+  const input = document.querySelector(
+    `.score-input[data-category="${categoryKey}"][data-column="${columnKey}"]`
+  );
+  if (input) {
+    input.value = numeric;
+    input.dataset.isFilled = "true";
+    input.dataset.error = "false";
+    input.setCustomValidity("");
+  }
+  
+  // Save and update UI
+  saveState();
+  updateUI();
+  
+  return true;
 }
