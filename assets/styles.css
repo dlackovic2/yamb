@@ -1246,6 +1246,17 @@ input.score-input.score-highlight {
   background: var(--accent-muted);
 }
 
+.mode-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mode-option.disabled:hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
 .mode-option input[type="radio"] {
   position: absolute;
   opacity: 0;
