@@ -1,12 +1,12 @@
 {
   "name": "yamb-score-tracker",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "description": "Beautiful, lightweight web app to track Yamb scores with manual dice rolls.",
   "type": "module",
   "scripts": {
-    "dev": "vite --open",
-    "start": "vite --open",
-    "build": "vite build",
+  "dev": "vite --open",
+  "start": "vite --open",
+  "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -19,10 +19,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "vite": "^5.4.0",
-    "vitest": "^1.6.0"
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.75.0"
   }
 }

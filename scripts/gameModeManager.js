@@ -4,6 +4,8 @@
  */
 
 import { VirtualDiceUI } from './virtualDiceUI.js';
+import { OnlineLobbyUI } from './onlineLobbyUI.js';
+import { OnlineGameManager } from './onlineGameManager.js';
 import { 
   loadGameMode, 
   saveGameMode, 
@@ -18,10 +20,22 @@ export class GameModeManager {
   constructor() {
     this.mode = loadGameMode();
     this.virtualDiceUI = null;
+    this.onlineLobby = null;
+    this.onlineGameManager = null;
     this.currentTurnContext = null;
     this.setScoreCallback = null; // Will be set by app.js
+    this.manualInputsEnabled = true;
+  this.onNewGame = null;
     
     this.initializeUI();
+    this.initializeOnlineGameManager();
+  }
+  
+  /**
+   * Initialize online game manager
+   */
+  initializeOnlineGameManager() {
+    this.onlineGameManager = new OnlineGameManager(this);
   }
   
   /**
@@ -29,6 +43,10 @@ export class GameModeManager {
    */
   setSetScoreCallback(callback) {
     this.setScoreCallback = callback;
+  }
+
+  setNewGameHandler(callback) {
+    this.onNewGame = typeof callback === 'function' ? callback : null;
   }
   
   /**
@@ -149,7 +167,7 @@ export class GameModeManager {
     this.roomCodeInput.readOnly = true;
     
     // TODO: In online implementation, create room in database
-    console.log('Room created:', roomCode);
+    //console.log('Room created:', roomCode);
   }
   
   /**
@@ -180,8 +198,35 @@ export class GameModeManager {
     if (location === GameMode.LOCATION.ONLINE && !updates.playerId) {
       updates.playerId = generatePlayerId();
     }
+
+    if (this.onlineGameManager) {
+      this.onlineGameManager.cleanup();
+    }
     
     this.mode = updateGameMode(updates);
+
+    if (typeof this.onNewGame === 'function') {
+      try {
+        this.onNewGame({ ...this.mode });
+      } catch (error) {
+        console.error('New game handler failed:', error);
+      }
+    }
+    
+    // Handle online mode
+    if (location === GameMode.LOCATION.ONLINE) {
+      //console.log('🌐 Online mode selected');
+      this.gameModeDialog.close();
+          
+      // Initialize online lobby if not already done
+      if (!this.onlineLobby) {
+        this.onlineLobby = new OnlineLobbyUI(this);
+      }
+      
+      // Show online lobby
+      this.onlineLobby.show();
+      return;
+    }
     
     // Initialize virtual dice if needed
     if (dice === GameMode.DICE.VIRTUAL) {
@@ -195,7 +240,7 @@ export class GameModeManager {
     // Trigger a scroll event to update back-to-dice button visibility
     window.dispatchEvent(new Event('scroll'));
     
-    console.log('Game mode updated:', this.mode);
+    //console.log('Game mode updated:', this.mode);
   }
   
   /**
@@ -233,6 +278,38 @@ export class GameModeManager {
   showGameModeDialog() {
     this.updateUIFromMode();
     this.gameModeDialog?.showModal();
+  }
+
+  openJoinOnlineGame() {
+    if (this.onlineGameManager) {
+      this.onlineGameManager.cleanup();
+    }
+
+    const updates = {
+      location: GameMode.LOCATION.ONLINE,
+      dice: this.mode?.dice ?? GameMode.DICE.PHYSICAL,
+      roomCode: null
+    };
+
+    if (!this.mode?.playerId) {
+      updates.playerId = generatePlayerId();
+    }
+
+    this.mode = updateGameMode(updates);
+
+    if (typeof this.onNewGame === 'function') {
+      try {
+        this.onNewGame({ ...this.mode });
+      } catch (error) {
+        console.error('New game handler failed:', error);
+      }
+    }
+
+    if (!this.onlineLobby) {
+      this.onlineLobby = new OnlineLobbyUI(this);
+    }
+
+    this.onlineLobby.openJoinFlow();
   }
   
   /**
@@ -305,7 +382,7 @@ export class GameModeManager {
    * Handle virtual score selection
    */
   handleVirtualScoreSelect(category, column, diceValues) {
-    console.log('Score selected:', category, column, diceValues);
+    //console.log('Score selected:', category, column, diceValues);
     
     // Find the input for this category and column
     const input = document.querySelector(
@@ -350,7 +427,7 @@ export class GameModeManager {
   handleVirtualAnnouncement() {
     // Show announcement selection
     // This would integrate with the existing announce dialog
-    console.log('Announcement needed');
+    //console.log('Announcement needed');
   }
   
   /**
@@ -446,6 +523,14 @@ export class GameModeManager {
         input.style.cursor = '';
         input.style.opacity = '';
         input.title = '';
+        input.classList.remove('turn-locked');
+        input.dataset.turnLocked = 'false';
+      } else if (entryMode === 'straight' || entryMode === 'announce') {
+        input.classList.remove('turn-locked');
+        input.dataset.turnLocked = 'false';
+        input.title = '';
+        input.style.cursor = '';
+        input.style.opacity = '';
       }
     });
   }
@@ -454,7 +539,7 @@ export class GameModeManager {
    * Handle score selection from main panel
    */
   handleMainPanelScoreSelect(category, column, scoreValue) {
-    console.log('Main panel score selected:', category, column, scoreValue);
+    //console.log('Main panel score selected:', category, column, scoreValue);
     
     // Find the input for this category and specified column
     const input = document.querySelector(
@@ -587,24 +672,30 @@ export class GameModeManager {
     // Use requestAnimationFrame to ensure the DOM has updated
     requestAnimationFrame(() => {
       try {
-        // Get the input's position
-        const rect = input.getBoundingClientRect();
-        const absoluteTop = rect.top + window.pageYOffset;
+        // Simple approach: scroll the input into view with some offset from top
+  const rect = input.getBoundingClientRect();
+  const currentScroll = window.pageYOffset || window.scrollY || 0;
+
+  // Position the input 100px from the top of the viewport
+  const offset = 160;
+  const targetScroll = currentScroll + rect.top - offset;
         
-        // Scroll with some offset so it's not at the very top
-        const offset = 350; // pixels from top
-        const scrollPosition = absoluteTop - offset;
+        // Only scroll if needed (input is not already visible in a good position)
+        const viewportHeight = window.innerHeight || 0;
+        const isInView = rect.top >= offset && rect.bottom <= viewportHeight - 100;
         
-        window.scrollTo({
-          top: scrollPosition,
-          behavior: 'smooth'
-        });
+        if (!isInView) {
+          window.scrollTo({
+            top: Math.max(0, targetScroll),
+            behavior: 'smooth'
+          });
+        }
         
         // Optional: briefly highlight the input
         input.classList.add('score-highlight');
         setTimeout(() => {
           input.classList.remove('score-highlight');
-        }, 1000);
+        }, 3000);
       } catch (error) {
         console.warn('Could not scroll to input:', error);
       }
@@ -637,6 +728,134 @@ export class GameModeManager {
    */
   isOnlineMode() {
     return this.mode.location === GameMode.LOCATION.ONLINE;
+  }
+
+  /**
+   *Apply remote online game mode information (e.g., dice type) and update UI accordingly
+   */
+  applyOnlineGameMode(remoteMode = {}) {
+    if (!remoteMode || typeof remoteMode !== 'object') {
+      return;
+    }
+
+    const merged = {
+      ...this.mode,
+      ...remoteMode
+    };
+
+    if (!merged.location) {
+      merged.location = GameMode.LOCATION.ONLINE;
+    }
+
+    this.mode = updateGameMode(merged);
+    this.updateUIFromMode();
+    this.applyDiceUiForMode();
+    if (this.shouldHandleOnlineManual()) {
+      this.manualInputsEnabled = false;
+    }
+    this.setOnlineManualInputEnabled(this.manualInputsEnabled);
+  }
+
+  /**
+   * Synchronize dice/scorecard UI with the current mode
+   */
+  applyDiceUiForMode() {
+    if (this.isVirtualMode()) {
+      this.showVirtualDicePanel();
+      this.disableScorecardInputs();
+    } else {
+      this.hideVirtualDicePanel();
+      this.enableScorecardInputs();
+    }
+  }
+
+  /**
+   * Determine if online manual input handling should be active
+   */
+  shouldHandleOnlineManual() {
+    return this.isOnlineMode() && !this.isVirtualMode();
+  }
+
+  /**
+   * Enable or disable manual score inputs for turn-based online play
+   */
+  setOnlineManualInputEnabled(enabled) {
+    this.manualInputsEnabled = Boolean(enabled);
+
+    if (!this.shouldHandleOnlineManual()) {
+      return;
+    }
+
+    const inputs = document.querySelectorAll('.score-input');
+    inputs.forEach(input => this.applyManualInputState(input, this.manualInputsEnabled));
+  }
+
+  /**
+   * Apply manual state to a single input element
+   */
+  applyManualInputState(input, enabled) {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const entryMode = input.dataset.entryMode;
+    const isLocked = !enabled;
+
+    if (entryMode === 'numeric') {
+      input.readOnly = isLocked;
+      input.style.cursor = isLocked ? 'not-allowed' : '';
+      input.style.opacity = isLocked ? '0.6' : '';
+      input.title = isLocked ? 'Wait for your turn!' : '';
+      input.dataset.turnLocked = String(isLocked);
+      input.classList.toggle('turn-locked', isLocked);
+    } else if (entryMode === 'straight' || entryMode === 'announce') {
+      input.dataset.turnLocked = String(isLocked);
+      input.classList.toggle('turn-locked', isLocked);
+      input.title = isLocked ? 'Wait for your turn!' : '';
+      input.style.cursor = isLocked ? 'not-allowed' : '';
+      input.style.opacity = isLocked ? '0.6' : '';
+    }
+  }
+
+  /**
+   * Forward manual score commitments to the online manager
+   */
+  handleOnlineManualScoreCommit(payload) {
+    if (!this.shouldHandleOnlineManual() || !this.onlineGameManager) {
+      return false;
+    }
+    this.onlineGameManager.handleManualScoreCommit(payload);
+    return true;
+  }
+
+  /**
+   * Notify the online manager that manual clearing is blocked
+   */
+  handleOnlineManualClearAttempt(input, previousValue) {
+    if (!this.shouldHandleOnlineManual() || !this.onlineGameManager) {
+      return false;
+    }
+    this.onlineGameManager.notifyManualClearBlocked(input, previousValue);
+    return true;
+  }
+
+  /**
+   * Surface a "wait for your turn" notice
+   */
+  notifyTurnLocked() {
+    if (this.shouldHandleOnlineManual() && this.onlineGameManager) {
+      this.onlineGameManager.showTurnLockedNotice();
+    }
+  }
+
+  /**
+   * Reapply the current online manual input lock state to the scorecard
+   */
+  refreshOnlineManualInputLock() {
+    if (!this.shouldHandleOnlineManual()) {
+      return;
+    }
+    this.setOnlineManualInputEnabled(this.manualInputsEnabled);
   }
 }
 

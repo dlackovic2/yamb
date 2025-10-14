@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Yamb Scorekeeper</title>
+    <title>Yambek 🎲</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,15 +22,15 @@
     <div class="gradient"></div>
     <header class="app-header">
       <div class="title-group">
-        <h1>Yamb Scorekeeper</h1>
-        <p>Log your rolls, we handle the math.</p>
+        <h1>Yambek 🎲</h1>
+        <p>Play Yamb solo or online - rolls included.</p>
       </div>
       <div class="actions">
-        <button id="game-mode-button" class="ghost action-button">
-          <span class="action-label">Game Mode</span>
+        <button id="new-game-button" class="ghost action-button">
+          <span class="action-label">New game</span>
         </button>
-        <button id="reset-all" class="ghost action-button">
-          <span class="action-label">New sheet</span>
+        <button id="join-online-button" class="ghost action-button">
+          <span class="action-label">Join online game</span>
         </button>
         <button id="settings-button" class="ghost icon-button" aria-label="Open settings">
           <span class="icon" aria-hidden="true">
@@ -49,6 +49,14 @@
         </label>
       </div>
     </header>
+
+    <div id="online-status-banner" class="online-status-banner" hidden>
+      <div class="online-status-room">
+        <span class="online-status-label">Room</span>
+        <code id="online-room-code" class="online-room-code">------</code>
+      </div>
+      <ul id="online-player-statuses" class="online-player-statuses" aria-live="polite"></ul>
+    </div>
 
     <main class="layout">
       <section class="scorecard" aria-label="Yamb score table">
@@ -236,9 +244,6 @@
             </span>
             <span class="settings-action-text">
               <span class="settings-action-title" id="wake-lock-title">Keep screen awake</span>
-              <span class="settings-action-subtitle" id="wake-lock-subtitle">
-                Prevent the display from locking while you score.
-              </span>
             </span>
             <div class="settings-toggle-control">
               <label class="switch" aria-label="Toggle keep screen awake">
@@ -260,7 +265,6 @@
             </span>
             <span class="settings-action-text">
               <span class="settings-action-title">Export sheet</span>
-              <span class="settings-action-subtitle">Copy or download your current scores</span>
             </span>
           </button>
           <button type="button" class="settings-action" data-settings-action="import">
@@ -273,7 +277,6 @@
             </span>
             <span class="settings-action-text">
               <span class="settings-action-title">Import sheet</span>
-              <span class="settings-action-subtitle">Paste a saved JSON export to continue</span>
             </span>
           </button>
         </div>
@@ -317,6 +320,24 @@
       </form>
     </dialog>
 
+    <dialog id="progress-warning-dialog" class="app-dialog progress-warning-dialog">
+      <form method="dialog">
+        <header>
+          <h2 id="progress-warning-title">Leave current game?</h2>
+          <button value="cancel" aria-label="Stay on current game">×</button>
+        </header>
+        <div class="dialog-body">
+          <p id="progress-warning-message">
+            You have a game in progress. Continuing will discard the current progress.
+          </p>
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Keep playing</button>
+          <button value="confirm" id="progress-warning-confirm" class="primary">Discard &amp; continue</button>
+        </footer>
+      </form>
+    </dialog>
+
     <dialog id="completion-dialog" class="app-dialog completion-dialog">
       <form method="dialog">
         <header>
@@ -351,11 +372,11 @@
                   <div class="mode-option-label">Local</div>
                   <div class="mode-option-description">Play on this device</div>
                 </label>
-                <label class="mode-option disabled" data-mode="location" data-value="online">
-                  <input type="radio" name="location" value="online" disabled />
+                <label class="mode-option" data-mode="location" data-value="online">
+                  <input type="radio" name="location" value="online" />
                   <div class="mode-option-icon">🌐</div>
                   <div class="mode-option-label">Online</div>
-                  <div class="mode-option-description">Coming soon</div>
+                  <div class="mode-option-description">Play with a friend</div>
                 </label>
               </div>
             </div>
@@ -378,27 +399,6 @@
               </div>
             </div>
 
-            <div class="mode-group" id="online-options" style="display: none;">
-              <h3>Online Setup</h3>
-              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <label>
-                  <span style="font-size: 0.85rem; color: var(--text-weak);">Your Name</span>
-                  <input type="text" id="player-name-input" placeholder="Enter your name" 
-                         style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.95rem;" />
-                </label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                  <button type="button" id="create-room-btn" class="primary" style="width: 100%;">Create Room</button>
-                  <button type="button" id="join-room-btn" class="primary" style="width: 100%;">Join Room</button>
-                </div>
-                <div id="room-code-section" style="display: none;">
-                  <label>
-                    <span style="font-size: 0.85rem; color: var(--text-weak);">Room Code</span>
-                    <input type="text" id="room-code-input" placeholder="Enter 6-character code" maxlength="6"
-                           style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.2em; text-align: center;" />
-                  </label>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <footer class="dialog-footer">

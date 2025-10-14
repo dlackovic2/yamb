@@ -37,8 +37,10 @@ export class VirtualDiceUI {
     this.sortBy = 'value'; // 'value' or 'scorecard'
     this.showZeroOptions = false;
     this.ignoreNextClick = false; // Suppress synthetic clicks after touch
-    this.touchClickResetTimer = null;
-    this.touchAnimationTimers = {};
+  this.touchClickResetTimer = null;
+  this.touchAnimationTimers = {};
+  this.controlsEnabled = true; // Track whether the local player can interact
+  this.lastScoresSignature = null; // Snapshot of the last rendered score options
     
     this.render();
     this.attachEventListeners();
@@ -49,6 +51,10 @@ export class VirtualDiceUI {
    */
   setGameState(gameState) {
     this.currentState = gameState;
+    if (gameState && Object.prototype.hasOwnProperty.call(gameState, 'announcement')) {
+      this.announced = gameState.announcement;
+      this.state = setAnnouncement(this.state, this.announced);
+    }
   }
   
   /**
@@ -58,8 +64,10 @@ export class VirtualDiceUI {
     this.state = resetDiceState();
     this.currentState = gameState;
     // Preserve announcement from game state (if any)
-    this.announced = gameState.announcement || null;
+    const nextAnnouncement = gameState?.announcement ?? null;
+    this.setAnnouncedCategory(nextAnnouncement, { force: true, render: false });
     this.render();
+    this.updatePossibleScores('start-turn');
   }
   
   /**
@@ -73,10 +81,7 @@ export class VirtualDiceUI {
    * Announce a category
    */
   announceCategory(category) {
-    this.announced = category;
-    this.state = setAnnouncement(this.state, category);
-    this.render();
-    this.updatePossibleScores();
+    this.setAnnouncedCategory(category, { force: true });
   }
   
   /**
@@ -91,6 +96,7 @@ export class VirtualDiceUI {
    * Roll the dice
    */
   async roll() {
+    if (!this.controlsEnabled) return;
     if (this.state.rollsRemaining <= 0) return;
     
     // If announcement is needed and not announced yet, prevent rolling
@@ -143,13 +149,14 @@ export class VirtualDiceUI {
       }
     });
     
-    this.updatePossibleScores();
+  this.updatePossibleScores('roll:post-render');
   }
   
   /**
    * Toggle lock on a specific die
    */
   toggleLock(index, preserveAnimation = false) {
+    if (!this.controlsEnabled) return;
     // Can lock/unlock after first roll and before all rolls used
     if (this.state.rollsRemaining === 3 || this.state.rollsRemaining === 0) return;
     
@@ -158,8 +165,16 @@ export class VirtualDiceUI {
       remainingAnimation = this.pauseTouchAnimation(index);
     }
 
+    const previousLocked = this.state.locked[index] ?? false;
     this.state = toggleDiceLock(this.state, index);
-    this.render();
+    const nextLocked = this.state.locked[index] ?? false;
+
+    const updated = this.updateDieLockElement(index, nextLocked);
+    if (!updated) {
+      this.render();
+    } else if (previousLocked !== nextLocked) {
+      this.applyControlClasses();
+    }
 
     if (preserveAnimation && remainingAnimation > 0) {
       // Leave a minimum hold so the user can finish perceiving the animation
@@ -168,7 +183,7 @@ export class VirtualDiceUI {
     }
     
     // Update scoring options after toggling lock
-    this.updatePossibleScores();
+    this.updatePossibleScores('toggle-lock');
   }
   
   /**
@@ -176,7 +191,7 @@ export class VirtualDiceUI {
    */
   toggleSort() {
     this.sortBy = this.sortBy === 'value' ? 'scorecard' : 'value';
-    this.updatePossibleScores();
+  this.updatePossibleScores('toggle-sort');
   }
   
   /**
@@ -184,7 +199,7 @@ export class VirtualDiceUI {
    */
   toggleZeroOptions() {
     this.showZeroOptions = !this.showZeroOptions;
-    this.updatePossibleScores();
+  this.updatePossibleScores('toggle-zero-options');
   }
   
   /**
@@ -217,15 +232,30 @@ export class VirtualDiceUI {
   /**
    * Update the display of possible scoring options
    */
-  updatePossibleScores() {
+  updatePossibleScores(reason = 'unspecified') {
+    if (typeof globalThis !== 'undefined' && globalThis.__traceAvailableScores) {
+      try {
+        const includeStack = globalThis.__traceAvailableScores === 'verbose';
+        console.debug('[VirtualDiceUI] updatePossibleScores', {
+          reason,
+          rollsRemaining: this.state?.rollsRemaining,
+          controlsEnabled: this.controlsEnabled,
+          timestamp: new Date().toISOString(),
+          stack: includeStack ? new Error().stack : undefined
+        });
+      } catch (error) {
+        console.warn('Failed to log available scores diagnostic.', error);
+      }
+    }
+
     if (!this.currentState || this.state.rollsRemaining === 3) {
       // No options before first roll
-      this.renderPossibleScores([]);
+      this.renderPossibleScores([], reason);
       return;
     }
     
     const options = this.calculateScoringOptions(this.state.values);
-    this.renderPossibleScores(options);
+    this.renderPossibleScores(options, reason);
   }
   
   /**
@@ -496,12 +526,54 @@ export class VirtualDiceUI {
    * Render the dice UI
    */
   render() {
-    const canAnnounce = this.canAnnounce() && !this.announced;
+    const controlsDisabled = !this.controlsEnabled;
+    const announceAvailable = getAvailableCategories(
+      'announce',
+      this.currentState?.scores || {},
+      this.currentState?.announcement || this.announced
+    );
+    const baseAnnounceWindowOpen = this.canAnnounce();
+    const hasAnnouncementOptions = announceAvailable.length > 0;
+    const announceActionEnabled = baseAnnounceWindowOpen && !this.announced && hasAnnouncementOptions && !controlsDisabled;
+
+    const buildAnnounceButton = ({ forceDisabled = false, title: overrideTitle } = {}) => {
+      const disabled = forceDisabled || !announceActionEnabled;
+
+      let title = overrideTitle || '';
+      if (!title) {
+        if (!hasAnnouncementOptions) {
+          title = 'No categories left to announce';
+        } else if (this.announced) {
+          title = 'You already announced this turn';
+        } else if (!baseAnnounceWindowOpen) {
+          title = 'You can only announce before or right after your first roll';
+        } else if (controlsDisabled) {
+          title = 'Announcements are disabled right now';
+        }
+      }
+
+      const attrs = [];
+      if (!disabled) {
+        attrs.push('data-action="show-announce"');
+      }
+      if (disabled) {
+        attrs.push('disabled', 'aria-disabled="true"');
+      }
+      if (title) {
+        attrs.push(`title="${title}"`);
+      }
+
+      const attrString = attrs.length ? ` ${attrs.join(' ')}` : '';
+      return `<button class="btn-announce"${attrString}>📢 Announce Category</button>`;
+    };
+
+    const canAnnounce = baseAnnounceWindowOpen && !this.announced;
     const hasRolled = this.state.rollsRemaining < 3;
     const needsAnnouncement = this.checkIfAnnouncementNeeded();
+    const controlsDisabledForRoll = controlsDisabled;
     
     const html = `
-      <div class="virtual-dice-container">
+      <div class="virtual-dice-container${controlsDisabledForRoll ? ' controls-disabled' : ''}">
         <div class="dice-status">
           <div class="rolls-remaining">
             <strong>Rolls remaining:</strong> ${this.state.rollsRemaining}/3
@@ -514,24 +586,22 @@ export class VirtualDiceUI {
           ` : ''}
         </div>
         
-        ${needsAnnouncement && canAnnounce ? `
+        ${needsAnnouncement && !this.announced && hasAnnouncementOptions ? `
           <div class="announce-prompt announce-required">
             <p>⚠️ Only Announce column available - you must announce a category!</p>
-            <button class="btn-announce" data-action="show-announce">
-              📢 Announce Category
-            </button>
+            ${buildAnnounceButton()}
           </div>
-        ` : canAnnounce ? `
+        ` : announceActionEnabled ? `
           <div class="announce-prompt">
-            <button class="btn-announce" data-action="show-announce">
-              📢 Announce Category
-            </button>
+            ${buildAnnounceButton()}
           </div>
-        ` : !this.announced && hasRolled ? `
+        ` : !this.announced && hasAnnouncementOptions && hasRolled ? `
           <div class="announce-prompt">
-            <button class="btn-announce" disabled title="Can only announce before or after first roll">
-              📢 Announce Category
-            </button>
+            ${buildAnnounceButton({ forceDisabled: true, title: 'Can only announce before or after first roll' })}
+          </div>
+        ` : needsAnnouncement && this.announced ? `
+          <div class="announce-prompt announce-required">
+            <p>⚠️ Only Announce column available - fill ${this.getCategoryLabel(this.announced)} in the announce column to finish the turn.</p>
           </div>
         ` : ''}
         
@@ -542,7 +612,7 @@ export class VirtualDiceUI {
         <div class="dice-controls">
           <button 
             class="btn-roll" 
-            ${this.state.rollsRemaining <= 0 || (needsAnnouncement && canAnnounce && this.state.rollsRemaining === 2) ? 'disabled' : ''}
+            ${(controlsDisabledForRoll || this.state.rollsRemaining <= 0 || (needsAnnouncement && canAnnounce && this.state.rollsRemaining === 2)) ? 'disabled' : ''}
             data-action="roll"
             ${needsAnnouncement && canAnnounce && this.state.rollsRemaining === 2 ? 'title="You must announce a category before rolling again!"' : ''}
           >
@@ -565,6 +635,8 @@ export class VirtualDiceUI {
     `;
     
     this.container.innerHTML = html;
+    this.lastScoresSignature = null;
+  this.applyControlClasses();
   }
   
   /**
@@ -572,13 +644,15 @@ export class VirtualDiceUI {
    */
   renderDie(value, index) {
     const locked = this.state.locked[index];
-    const canToggle = this.state.rollsRemaining < 3 && this.state.rollsRemaining > 0;
+    const canToggle = this.controlsEnabled && this.state.rollsRemaining < 3 && this.state.rollsRemaining > 0;
     
     return `
       <div 
         class="die ${locked ? 'locked' : ''} ${canToggle ? 'clickable' : ''}" 
         data-index="${index}"
         data-action="${canToggle ? 'toggle-lock' : ''}"
+        role="button"
+        aria-pressed="${locked ? 'true' : 'false'}"
       >
         <div class="die-face">${this.renderDieFace(value)}</div>
         ${locked ? '<div class="lock-indicator">🔒</div>' : ''}
@@ -600,21 +674,60 @@ export class VirtualDiceUI {
   /**
    * Render possible scoring options
    */
-  renderPossibleScores(options) {
+  renderPossibleScores(options, reason = 'unspecified') {
     const container = this.container.querySelector('#possible-scores-list');
     if (!container) return;
     
+  const shouldTrace = typeof globalThis !== 'undefined' && Boolean(globalThis.__traceAvailableScores);
+  const disableAnimation = reason === 'toggle-lock' || (typeof reason === 'string' && reason.includes(':lock'));
+
     // If no options provided, recalculate from current state
     if (!options) {
       if (this.state.rollsRemaining === 3 || this.state.values.length === 0) {
+        const signature = this.buildPossibleScoresSignature([], {
+          state: 'needs-roll',
+          reason,
+          rollsRemaining: this.state.rollsRemaining,
+          values: Array.isArray(this.state.values) ? this.state.values.join(',') : '',
+          disableAnimation
+        });
+
+        if (signature === this.lastScoresSignature) {
+          if (shouldTrace) {
+            console.debug('[VirtualDiceUI] Skipping score render (same signature)', { reason, state: 'needs-roll' });
+          }
+          this.applyControlClasses();
+          return;
+        }
+
+        this.lastScoresSignature = signature;
         container.innerHTML = '<p class="no-options">🎲 Roll the dice to see scoring options</p>';
+        this.applyControlClasses();
         return;
       }
       options = this.calculateScoringOptions(this.state.values);
     }
     
-    if (options.length === 0) {
+    if (!options || options.length === 0) {
+      const signature = this.buildPossibleScoresSignature(options ?? [], {
+        state: 'no-options',
+        reason,
+        rollsRemaining: this.state.rollsRemaining,
+        values: Array.isArray(this.state.values) ? this.state.values.join(',') : '',
+        disableAnimation
+      });
+
+      if (signature === this.lastScoresSignature) {
+        if (shouldTrace) {
+          console.debug('[VirtualDiceUI] Skipping score render (same signature)', { reason, state: 'no-options' });
+        }
+        this.applyControlClasses();
+        return;
+      }
+
+      this.lastScoresSignature = signature;
       container.innerHTML = '<p class="no-options">🎲 Roll the dice to see scoring options</p>';
+      this.applyControlClasses();
       return;
     }
     
@@ -622,9 +735,28 @@ export class VirtualDiceUI {
     const filteredOptions = this.showZeroOptions 
       ? options 
       : options.filter(opt => opt.value > 0);
+    const zeroCount = options.reduce((sum, opt) => sum + (opt.value === 0 ? 1 : 0), 0);
     
     // If filtering removed all options, show a message with toggle
     if (filteredOptions.length === 0) {
+      const signature = this.buildPossibleScoresSignature([], {
+        state: 'zeros-hidden',
+        reason,
+        totalCount: options.length,
+        zeroCount,
+        rollsRemaining: this.state.rollsRemaining,
+        disableAnimation
+      });
+
+      if (signature === this.lastScoresSignature) {
+        if (shouldTrace) {
+          console.debug('[VirtualDiceUI] Skipping score render (same signature)', { reason, state: 'zeros-hidden' });
+        }
+        this.applyControlClasses();
+        return;
+      }
+
+      this.lastScoresSignature = signature;
       container.innerHTML = `
         <div class="no-visible-options">
           <p class="no-options">All available scores are zero</p>
@@ -633,6 +765,7 @@ export class VirtualDiceUI {
           </button>
         </div>
       `;
+      this.applyControlClasses();
       return;
     }
     
@@ -652,9 +785,9 @@ export class VirtualDiceUI {
           ` : ''}
         </div>
       </div>
-      <div class="score-options">
+      <div class="score-options${disableAnimation ? ' no-animation' : ''}">
         ${filteredOptions.map(opt => `
-          <div class="score-option ${opt.value === 0 ? 'zero-value' : ''}" 
+          <div class="score-option ${disableAnimation ? 'no-animation ' : ''}${opt.value === 0 ? 'zero-value' : ''}" 
                data-category="${opt.category}"
                data-column="${opt.column}"
                data-value="${opt.value}"
@@ -672,8 +805,177 @@ export class VirtualDiceUI {
         `).join('')}
       </div>
     `;
-    
+    const signature = this.buildPossibleScoresSignature(filteredOptions, {
+      state: 'options',
+      reason,
+      totalCount: options.length,
+      zeroCount,
+      hasZeroOptions,
+      disableAnimation
+    });
+
+    if (signature === this.lastScoresSignature) {
+      if (shouldTrace) {
+        console.debug('[VirtualDiceUI] Skipping score render (same signature)', { reason, state: 'options' });
+      }
+      this.applyControlClasses();
+      return;
+    }
+
+    this.lastScoresSignature = signature;
     container.innerHTML = html;
+    this.applyControlClasses();
+  }
+
+  buildPossibleScoresSignature(options, meta = {}) {
+    const parts = [
+      `sort=${this.sortBy}`,
+      `showZeros=${this.showZeroOptions ? 1 : 0}`,
+      `disableAnimation=${meta.disableAnimation ? 1 : 0}`
+    ];
+
+    if (!Array.isArray(options) || options.length === 0) {
+      parts.push(`state=${meta.state ?? 'empty'}`);
+      if (meta.rollsRemaining !== undefined) {
+        parts.push(`rolls=${meta.rollsRemaining}`);
+      }
+      if (meta.values !== undefined) {
+        parts.push(`values=${meta.values}`);
+      }
+      if (meta.totalCount !== undefined) {
+        parts.push(`total=${meta.totalCount}`);
+      }
+      if (meta.zeroCount !== undefined) {
+        parts.push(`zeroCount=${meta.zeroCount}`);
+      }
+      if (meta.reason) {
+        parts.push(`reason=${meta.reason}`);
+      }
+      return parts.join(';');
+    }
+
+    const optionParts = options.map((opt) => {
+      const fields = [
+        opt.category,
+        opt.column,
+        opt.value,
+        opt.description ?? '',
+        opt.available ? 1 : 0
+      ];
+      return fields.join(':');
+    });
+
+    parts.push(`options=${optionParts.join('|')}`);
+
+    if (meta.totalCount !== undefined) {
+      parts.push(`total=${meta.totalCount}`);
+    }
+    if (meta.zeroCount !== undefined) {
+      parts.push(`zeroCount=${meta.zeroCount}`);
+    }
+    if (meta.hasZeroOptions !== undefined) {
+      parts.push(`hasZero=${meta.hasZeroOptions ? 1 : 0}`);
+    }
+    if (meta.reason) {
+      parts.push(`reason=${meta.reason}`);
+    }
+
+    return parts.join(';');
+  }
+
+  applyControlClasses() {
+    const root = this.container.querySelector('.virtual-dice-container');
+    if (!root) return;
+
+    const disabled = !this.controlsEnabled;
+    root.classList.toggle('controls-disabled', disabled);
+
+    const rollButton = root.querySelector('.btn-roll');
+    if (rollButton) {
+      if (disabled) {
+        rollButton.disabled = true;
+        rollButton.setAttribute('aria-disabled', 'true');
+      } else {
+        rollButton.removeAttribute('aria-disabled');
+      }
+    }
+
+    const announceButtons = root.querySelectorAll('.btn-announce');
+    announceButtons.forEach((button) => {
+      if (disabled) {
+        button.setAttribute('aria-disabled', 'true');
+      } else {
+        button.removeAttribute('aria-disabled');
+      }
+    });
+
+    const possibleScores = root.querySelector('.possible-scores');
+    if (possibleScores) {
+      possibleScores.classList.toggle('controls-disabled', disabled);
+    }
+
+    const scoreOptions = root.querySelectorAll('.score-option');
+    scoreOptions.forEach((option) => {
+      option.classList.toggle('controls-disabled', disabled);
+      if (disabled) {
+        option.setAttribute('aria-disabled', 'true');
+      } else {
+        option.removeAttribute('aria-disabled');
+      }
+    });
+
+  }
+
+  setControlsEnabled(enabled) {
+    const normalized = Boolean(enabled);
+
+    if (this.controlsEnabled === normalized) {
+      this.applyControlClasses();
+      return;
+    }
+
+    this.controlsEnabled = normalized;
+    this.render();
+  this.updatePossibleScores('setControlsEnabled');
+    this.applyControlClasses();
+  }
+
+  setAnnouncedCategory(category, options = {}) {
+    const normalized = category ?? null;
+    const previous = this.announced ?? null;
+    const hasChanged = previous !== normalized;
+
+    this.announced = normalized;
+    this.state = setAnnouncement(this.state, normalized);
+
+    if (this.currentState) {
+      this.currentState = {
+        ...this.currentState,
+        announcement: normalized
+      };
+    }
+
+    const shouldRender = options.render !== false && (hasChanged || options.force);
+
+    if (shouldRender) {
+      if (!hasChanged && options.force) {
+        // Avoid resetting the score panel when nothing changed.
+        this.applyControlClasses();
+        if (options.recalculate) {
+          this.updatePossibleScores('setAnnouncedCategory:recalculate');
+        }
+        return;
+      }
+
+      this.render();
+      this.updatePossibleScores('setAnnouncedCategory:render');
+      return;
+    }
+
+    if (options.recalculate) {
+      this.updatePossibleScores('setAnnouncedCategory:recalculate');
+      this.applyControlClasses();
+    }
   }
   
   /**
@@ -683,6 +985,10 @@ export class VirtualDiceUI {
    * Prompt for announcement
    */
   promptForAnnouncement() {
+    if (!this.controlsEnabled) return;
+    if (!this.canAnnounce()) return;
+    if (this.announced) return;
+
     // Get available categories for announce column
     const availableCategories = getAvailableCategories(
       'announce',
@@ -691,7 +997,6 @@ export class VirtualDiceUI {
     );
     
     if (availableCategories.length === 0) {
-      alert('No categories available for announcement!');
       return;
     }
     
@@ -836,6 +1141,10 @@ export class VirtualDiceUI {
     this.container.addEventListener('click', (e) => {
       const option = e.target.closest('.score-option');
       if (option && !option.classList.contains('unavailable')) {
+        if (!this.controlsEnabled) {
+          e.preventDefault();
+          return;
+        }
         const category = option.dataset.category;
         const column = option.dataset.column;
         const value = parseInt(option.dataset.value);
@@ -846,14 +1155,12 @@ export class VirtualDiceUI {
       
       // Handle sort button clicks
       if (e.target.closest('[data-action="toggle-sort"]')) {
-        this.sortBy = this.sortBy === 'value' ? 'order' : 'value';
-        this.renderPossibleScores(); // Will recalculate
+        this.toggleSort();
       }
       
       // Handle show zero toggle
       if (e.target.closest('[data-action="toggle-zeros"]')) {
-        this.showZeroOptions = !this.showZeroOptions;
-        this.renderPossibleScores(); // Will recalculate
+        this.toggleZeroOptions();
       }
     });
   }
@@ -874,6 +1181,30 @@ export class VirtualDiceUI {
 
   getDieElement(index) {
     return this.container.querySelector(`[data-index="${index}"]`);
+  }
+
+  updateDieLockElement(index, locked) {
+    const die = this.getDieElement(index);
+    if (!die) {
+      return false;
+    }
+
+    die.classList.toggle('locked', locked);
+    die.setAttribute('aria-pressed', locked ? 'true' : 'false');
+
+    let indicator = die.querySelector('.lock-indicator');
+    if (locked) {
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'lock-indicator';
+        indicator.textContent = '🔒';
+        die.appendChild(indicator);
+      }
+    } else if (indicator) {
+      indicator.remove();
+    }
+
+    return true;
   }
 
   startTouchAnimation(index, duration = 1200) {

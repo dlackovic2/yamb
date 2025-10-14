@@ -15,7 +15,8 @@ A minimal-yet-polished web app for manually logging Yamb dice results. Roll your
 - Four standard columns: Down, Up, Free, and Announce
 - Automatic subtotal, bonus, difference, and grand total calculations
 - **🎲 Virtual Dice Mode**: Cryptographically secure random dice rolls with 3-roll system
-- **🎮 Game Modes**: Choose between local/online play and physical/virtual dice
+- **🎮 Game Modes**: Choose between local or online play with either virtual dice or manual score entry
+- Turn-locked online manual mode ensures only the active player can edit their scorecard
 - **🔒 Lock Dice**: Keep specific dice between rolls when using virtual mode
 - **💡 Smart Suggestions**: See all possible scoring options for your current dice
 - Persistent storage via `localStorage`, plus quick export to JSON
@@ -42,7 +43,7 @@ When you enable **Virtual Dice Mode**, you get:
 
 ### Location Modes
 - **🏠 Local**: Play on a single device (default)
-- **🌐 Online**: Play with remote friends *(coming soon)*
+- **🌐 Online**: Play with remote friends via room code—works with both virtual dice and manual score entry
 
 ### Dice Modes
 - **🎲 Physical**: Use real dice and manually enter results (original mode)
@@ -143,6 +144,61 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 - ✅ `npm test` — validates scoring calculations stay correct
 
-## 📜 License
+## � Manual winner verification
+
+If you want to sanity–check the new online endgame presentation without playing a full match, try one of the quick drills below.
+
+1. **Smoke-test the modal in the browser console**
+    - Open the game in your browser (any page works).
+    - Open the browser console (F12 or Ctrl+Shift+I).
+    - The test helpers are automatically loaded. Try one of these:
+       ```js
+       // Test with default data
+       testWinnerScreen()
+       
+       // Or test as winner (with confetti!)
+       testAsWinner()
+       
+       // Or test as loser
+       testAsLoser()
+       
+       // Or test with custom data
+       testWinnerScreen({
+          viewerId: 'playerA',
+          winnerId: 'playerA',
+          standings: [
+             {
+                id: 'playerA',
+                name: 'Player A',
+                total: 325,
+                columns: {
+                   down: { total: 110 },
+                   up: { total: 95 },
+                   free: { total: 60 },
+                   announce: { total: 60 }
+                }
+             },
+             {
+                id: 'playerB',
+                name: 'Player B',
+                total: 301,
+                columns: {
+                   down: { total: 100 },
+                   up: { total: 88 },
+                   free: { total: 63 },
+                   announce: { total: 50 }
+                }
+             }
+          ]
+       })
+       ```
+    - The modal should render immediately, showing the winner banner, per-column breakdowns, and the points margin.
+
+2. **Trigger the real endgame path against Supabase**
+    - In Supabase, locate both rows for your active match in `game_state` and paste a 52-cell scorecard into each (values from `tests/scoring.test.js` work well).
+    - Set any remaining `last_action` metadata you care about, then reload the app: `window.onlineGameManager` will pull the filled scorecards, detect completion, and display the winner overlay automatically.
+    - Refresh as a spectator (or re-open the page) to confirm the same standings rehydrate without replaying the whole match.
+
+## �📜 License
 
 Released under the MIT License — enjoy and adapt freely.

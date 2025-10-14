@@ -15,7 +15,8 @@ const THEME_KEY = "yamb-scorekeeper-theme";
 
 const tableBody = document.querySelector("#score-table tbody");
 const summaryList = document.getElementById("summary-list");
-const resetButton = document.getElementById("reset-all");
+const newGameButton = document.getElementById("new-game-button");
+const joinOnlineButton = document.getElementById("join-online-button");
 const themeToggle = document.getElementById("theme-toggle");
 const settingsButton = document.getElementById("settings-button");
 const overallGrandTotalCell = document.getElementById("overall-grand-total");
@@ -50,6 +51,10 @@ const importTextarea = document.getElementById("import-textarea");
 
 const resetDialog = document.getElementById("reset-dialog");
 const resetDialogForm = resetDialog?.querySelector("form");
+const progressWarningDialog = document.getElementById("progress-warning-dialog");
+const progressWarningTitle = document.getElementById("progress-warning-title");
+const progressWarningMessage = document.getElementById("progress-warning-message");
+const progressWarningConfirm = document.getElementById("progress-warning-confirm");
 
 const completionDialog = document.getElementById("completion-dialog");
 const completionDialogTitle = document.getElementById("completion-dialog-title");
@@ -111,6 +116,91 @@ const inputRegistry = new Map();
 let state = loadState();
 let derivedByColumn = {};
 let lastCompletionSignature = null;
+
+function resetGameUiState() {
+  try {
+    const onlineManager = gameModeManager?.onlineGameManager;
+    if (onlineManager?.hasActiveGame?.()) {
+      onlineManager.cleanup();
+    }
+  } catch (error) {
+    console.error('Failed to cleanup active online game during reset:', error);
+  }
+
+  try {
+    if (gameModeManager?.hideVirtualDicePanel) {
+      gameModeManager.hideVirtualDicePanel();
+    }
+    if (gameModeManager?.enableScorecardInputs) {
+      gameModeManager.enableScorecardInputs();
+    }
+    if (gameModeManager?.setOnlineManualInputEnabled) {
+      gameModeManager.setOnlineManualInputEnabled(true);
+    }
+  } catch (error) {
+    console.error('Failed to reset game mode UI during reset:', error);
+  }
+
+  performReset();
+}
+
+function hasAnyRecordedScores() {
+  return columns.some((column) => {
+    const columnState = state[column.key];
+    return columnState && Object.keys(columnState).length > 0;
+  });
+}
+
+function hasActiveOnlineGame() {
+  return Boolean(gameModeManager?.onlineGameManager?.hasActiveGame?.());
+}
+
+function isGameInProgress() {
+  return hasAnyRecordedScores() || hasActiveOnlineGame();
+}
+
+async function confirmAbandonCurrentGame(actionLabel) {
+  if (!isGameInProgress()) {
+    return true;
+  }
+
+  const message = `You have a game in progress. ${actionLabel} will discard the current progress. Continue?`;
+
+  if (!progressWarningDialog || !progressWarningMessage || !progressWarningConfirm) {
+    const confirmed = window.confirm(message);
+    if (confirmed) {
+      resetGameUiState();
+    }
+    return confirmed;
+  }
+
+  if (progressWarningTitle) {
+    progressWarningTitle.textContent = 'Leave current game?';
+  }
+
+  progressWarningMessage.textContent = message;
+  progressWarningConfirm.textContent = 'Discard & continue';
+
+  if (!showDialog(progressWarningDialog)) {
+    const confirmed = window.confirm(message);
+    if (confirmed) {
+      resetGameUiState();
+    }
+    return confirmed;
+  }
+
+  return await new Promise((resolve) => {
+    const handleClose = () => {
+      const confirmed = progressWarningDialog.returnValue === 'confirm';
+      if (confirmed) {
+        resetGameUiState();
+      }
+      resolve(confirmed);
+    };
+
+    progressWarningDialog.addEventListener('close', handleClose, { once: true });
+  });
+}
 
 const DIE_PIP_COORDINATES = [
   [20, 20],
@@ -352,11 +442,8 @@ function getSequentialFailure(columnKey, categoryKey, columnState) {
 function lockScroll() {
   if (scrollLockState.count === 0) {
     scrollLockState.value = window.scrollY ?? window.pageYOffset ?? 0;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollLockState.value}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+    document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`;
     document.body.setAttribute("data-scroll-locked", "true");
   }
   scrollLockState.count += 1;
@@ -367,13 +454,9 @@ function unlockScroll() {
   scrollLockState.count -= 1;
   if (scrollLockState.count <= 0) {
     scrollLockState.count = 0;
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
     document.body.removeAttribute("data-scroll-locked");
-    window.scrollTo(0, scrollLockState.value);
   }
 }
 
@@ -453,6 +536,8 @@ registerDialog(importDialog, {
 registerDialog(resetDialog, {
   onClose: handleResetDialogClose
 });
+
+registerDialog(progressWarningDialog);
 
 registerDialog(completionDialog, {
   onClose: () => {
@@ -746,6 +831,9 @@ setupBackToDiceButton();
 
 // Pass setScore callback to gameModeManager to avoid circular dependency
 gameModeManager.setSetScoreCallback(setScore);
+gameModeManager.setNewGameHandler(() => {
+  performReset();
+});
 
 // Initialize game mode on page load
 if (gameModeManager.isVirtualMode()) {
@@ -990,12 +1078,21 @@ function renderTable() {
 }
 
 function attachEvents() {
-  const gameModeButton = document.getElementById("game-mode-button");
-  gameModeButton?.addEventListener("click", () => {
+  newGameButton?.addEventListener("click", async () => {
+    if (!(await confirmAbandonCurrentGame('Starting a new game'))) {
+      return;
+    }
+
     gameModeManager.showGameModeDialog();
   });
 
-  resetButton?.addEventListener("click", openResetDialog);
+  joinOnlineButton?.addEventListener("click", async () => {
+    if (!(await confirmAbandonCurrentGame('Joining an online game'))) {
+      return;
+    }
+
+    gameModeManager.openJoinOnlineGame();
+  });
 
   settingsButton?.addEventListener("click", openSettingsDialog);
 
@@ -1047,6 +1144,19 @@ function attachEvents() {
 function handleInputFocus(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement)) return;
+
+  if (input.dataset.turnLocked === "true") {
+    gameModeManager?.notifyTurnLocked?.();
+    requestAnimationFrame(() => {
+      try {
+        input.blur();
+      } catch (error) {
+        /* ignore blur errors */
+      }
+    });
+    return;
+  }
+
   input.dataset.error = "false";
   input.setCustomValidity("");
   if (input.dataset.entryMode !== "straight" && !input.readOnly) {
@@ -1063,6 +1173,14 @@ function handleInputFocus(event) {
 function handleTyping(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement)) return;
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault?.();
+    gameModeManager?.notifyTurnLocked?.();
+    const columnState = state[input.dataset.column ?? ""] ?? {};
+    const prev = columnState[input.dataset.category ?? ""];
+    input.value = prev ?? "";
+    return;
+  }
   input.dataset.error = "false";
   input.setCustomValidity("");
 }
@@ -1070,6 +1188,13 @@ function handleTyping(event) {
 function handleCommit(event) {
   const input = event.target;
   if (input instanceof HTMLInputElement) {
+    if (input.dataset.turnLocked === "true") {
+      gameModeManager?.notifyTurnLocked?.();
+      const columnState = state[input.dataset.column ?? ""] ?? {};
+      const prev = columnState[input.dataset.category ?? ""];
+      input.value = prev ?? "";
+      return;
+    }
     commitInput(input);
   }
 }
@@ -1077,6 +1202,14 @@ function handleCommit(event) {
 function handleInputKeydown(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement)) return;
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault();
+    gameModeManager?.notifyTurnLocked?.();
+    const columnState = state[input.dataset.column ?? ""] ?? {};
+    const prev = columnState[input.dataset.category ?? ""];
+    input.value = prev ?? "";
+    return;
+  }
 
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1094,12 +1227,25 @@ function handleInputKeydown(event) {
 function handleStraightTrigger(event) {
   const input = event.currentTarget;
   if (!(input instanceof HTMLInputElement)) return;
+
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault?.();
+    gameModeManager?.notifyTurnLocked?.();
+    return;
+  }
+
   openStraightDialogForInput(input);
 }
 
 function handleStraightKeydown(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement)) return;
+
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault();
+    gameModeManager?.notifyTurnLocked?.();
+    return;
+  }
 
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
@@ -1124,9 +1270,14 @@ function commitInput(input) {
   const columnState = state[columnKey] ?? (state[columnKey] = {});
   const previousValue = columnState[categoryKey];
   const raw = input.value.trim();
+  const usingOnlineManual = Boolean(gameModeManager?.shouldHandleOnlineManual?.());
 
   if (raw === "") {
     if (previousValue !== undefined) {
+      if (usingOnlineManual && gameModeManager?.handleOnlineManualClearAttempt?.(input, previousValue)) {
+        return;
+      }
+
       delete columnState[categoryKey];
       saveState();
       updateUI();
@@ -1170,6 +1321,16 @@ function commitInput(input) {
     return;
   }
 
+  if (usingOnlineManual && gameModeManager?.handleOnlineManualScoreCommit?.({
+    input,
+    columnKey,
+    categoryKey,
+    value: numeric,
+    previousValue
+  })) {
+    return;
+  }
+
   columnState[categoryKey] = numeric;
   saveState();
   updateUI();
@@ -1181,6 +1342,11 @@ function openStraightDialogForInput(input) {
   // Check if virtual dice mode is active
   if (gameModeManager && gameModeManager.shouldUseVirtualDice()) {
     // Virtual dice mode - don't open dialog, inputs are disabled
+    return;
+  }
+
+  if (input.dataset.turnLocked === "true") {
+    gameModeManager?.notifyTurnLocked?.();
     return;
   }
   
@@ -1243,6 +1409,11 @@ function openAnnounceDialogForInput(input) {
     if (response === null) return;
     input.value = response.trim();
     commitInput(input);
+    return;
+  }
+
+  if (input.dataset.turnLocked === "true") {
+    gameModeManager?.notifyTurnLocked?.();
     return;
   }
 
@@ -1319,6 +1490,12 @@ function handleAnnounceTrigger(event) {
     event.preventDefault();
     return;
   }
+
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault();
+    gameModeManager?.notifyTurnLocked?.();
+    return;
+  }
   
   openAnnounceDialogForInput(input);
 }
@@ -1326,6 +1503,12 @@ function handleAnnounceTrigger(event) {
 function handleAnnounceKeydown(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement)) return;
+
+  if (input.dataset.turnLocked === "true") {
+    event.preventDefault();
+    gameModeManager?.notifyTurnLocked?.();
+    return;
+  }
 
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
@@ -1532,6 +1715,9 @@ function validateImportedState(candidateState) {
 
 function maybeShowCompletion() {
   if (!completionDialog) return;
+  if (gameModeManager?.isOnlineMode?.()) {
+    return;
+  }
   if (!isBoardComplete(state)) {
     lastCompletionSignature = null;
     return;
@@ -1778,6 +1964,53 @@ function openInfoDialog(title, message) {
   showDialog(infoDialog);
 }
 
+function convertServerScorecardToState(scorecard) {
+  const nextState = createEmptyState();
+  if (!scorecard || typeof scorecard !== "object") return nextState;
+
+  Object.entries(scorecard).forEach(([key, rawValue]) => {
+    if (typeof key !== "string") return;
+    const separatorIndex = key.indexOf("_");
+    if (separatorIndex <= 0) return;
+    const columnKey = key.substring(0, separatorIndex);
+    const categoryKey = key.substring(separatorIndex + 1);
+    if (!Object.prototype.hasOwnProperty.call(nextState, columnKey)) return;
+
+    const numericValue = Number(rawValue);
+    if (!Number.isFinite(numericValue)) return;
+    nextState[columnKey][categoryKey] = numericValue;
+  });
+
+  return nextState;
+}
+
+/**
+ * Synchronize the editable scorecard with data fetched from the server.
+ */
+function applyServerScorecard(scorecard, options = {}) {
+  const { rebuild = false } = options;
+
+  if (rebuild && typeof renderTable === "function") {
+    renderTable();
+  }
+
+  state = convertServerScorecardToState(scorecard);
+  saveState();
+  updateUI();
+
+  if (gameModeManager?.isVirtualMode?.()) {
+    gameModeManager.disableScorecardInputs();
+  } else if (gameModeManager?.refreshOnlineManualInputLock) {
+    gameModeManager.refreshOnlineManualInputLock();
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.applyServerScorecard = applyServerScorecard;
+  window.renderTable = renderTable;
+  window.convertServerScorecardToState = convertServerScorecardToState;
+}
+
 function formatScore(number) {
   const value = Number(number);
   if (!Number.isFinite(value) || value === 0) return "0";
@@ -1880,3 +2113,14 @@ export function setScore(categoryKey, columnKey, value) {
   
   return true;
 }
+
+// Initialize app and check for existing online game
+(async function initApp() {
+  // Check if there's an existing online game to rejoin
+  if (gameModeManager?.onlineGameManager) {
+    const reconnected = await gameModeManager.onlineGameManager.checkForExistingGame();
+    if (reconnected) {
+      //console.log('✅ Reconnected to existing game');
+    }
+  }
+})();
