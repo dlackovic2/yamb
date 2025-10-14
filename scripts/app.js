@@ -69,19 +69,6 @@ const prefersDesktopInteraction =
     ? !window.matchMedia("(pointer: coarse)").matches
     : true;
 
-// Parallax disabled - keeping elements for static background only
-// const parallaxScene = document.querySelector("[data-parallax-scene]");
-// const parallaxLayers = parallaxScene ? Array.from(parallaxScene.querySelectorAll("[data-depth]")) : [];
-// const prefersReducedMotionQuery =
-//   typeof window !== "undefined" && typeof window.matchMedia === "function"
-//     ? window.matchMedia("(prefers-reduced-motion: reduce)")
-//     : null;
-// const parallaxState = {
-//   scrollY: 0,
-//   ticking: false
-// };
-// let parallaxEnabled = false;
-
 const WAKE_LOCK_STORAGE_KEY = "yamb-keep-awake";
 const AudioContextClass =
   typeof window !== "undefined" ? window.AudioContext || window.webkitAudioContext : null;
