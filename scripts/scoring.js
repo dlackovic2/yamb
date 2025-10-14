@@ -2,7 +2,7 @@ export const columns = [
   { key: "down", label: "Down" },
   { key: "up", label: "Up" },
   { key: "free", label: "Free" },
-  { key: "announce", label: "Announce" }
+  { key: "announce", label: "Announce" },
 ];
 
 export const categories = [
@@ -13,7 +13,7 @@ export const categories = [
     input: true,
     dieFace: 1,
     hint: "Possible totals: 0, 1, 2, 3, 4, or 5 (count of rolled ones)",
-    invalidMessage: "Ones can only total 0, 1, 2, 3, 4, or 5."
+    invalidMessage: "Ones can only total 0, 1, 2, 3, 4, or 5.",
   },
   {
     key: "twos",
@@ -22,7 +22,7 @@ export const categories = [
     input: true,
     dieFace: 2,
     hint: "Possible totals: 0, 2, 4, 6, 8, or 10",
-    invalidMessage: "Twos can only total 0, 2, 4, 6, 8, or 10."
+    invalidMessage: "Twos can only total 0, 2, 4, 6, 8, or 10.",
   },
   {
     key: "threes",
@@ -31,7 +31,7 @@ export const categories = [
     input: true,
     dieFace: 3,
     hint: "Possible totals: 0, 3, 6, 9, 12, or 15",
-    invalidMessage: "Threes can only total 0, 3, 6, 9, 12, or 15."
+    invalidMessage: "Threes can only total 0, 3, 6, 9, 12, or 15.",
   },
   {
     key: "fours",
@@ -40,7 +40,7 @@ export const categories = [
     input: true,
     dieFace: 4,
     hint: "Possible totals: 0, 4, 8, 12, 16, or 20",
-    invalidMessage: "Fours can only total 0, 4, 8, 12, 16, or 20."
+    invalidMessage: "Fours can only total 0, 4, 8, 12, 16, or 20.",
   },
   {
     key: "fives",
@@ -49,7 +49,7 @@ export const categories = [
     input: true,
     dieFace: 5,
     hint: "Possible totals: 0, 5, 10, 15, 20, or 25",
-    invalidMessage: "Fives can only total 0, 5, 10, 15, 20, or 25."
+    invalidMessage: "Fives can only total 0, 5, 10, 15, 20, or 25.",
   },
   {
     key: "sixes",
@@ -58,7 +58,7 @@ export const categories = [
     input: true,
     dieFace: 6,
     hint: "Possible totals: 0, 6, 12, 18, 24, or 30",
-    invalidMessage: "Sixes can only total 0, 6, 12, 18, 24, or 30."
+    invalidMessage: "Sixes can only total 0, 6, 12, 18, 24, or 30.",
   },
   {
     key: "upperSubtotal",
@@ -67,7 +67,7 @@ export const categories = [
     section: "upperTotal",
     computed: true,
     style: "total",
-    hint: "Sum of the ones–sixes rows"
+    hint: "Sum of the ones–sixes rows",
   },
   {
     key: "bonus",
@@ -76,7 +76,7 @@ export const categories = [
     section: "upperTotal",
     computed: true,
     style: "total",
-    hint: "Earn +30 when subtotal reaches 60"
+    hint: "Earn +30 when subtotal reaches 60",
   },
   {
     key: "upperTotal",
@@ -84,7 +84,7 @@ export const categories = [
     subLabel: "total",
     section: "upperTotal",
     computed: true,
-    style: "total-strong"
+    style: "total-strong",
   },
   { key: "max", label: "Max", section: "middle", input: true, hint: "Best high roll score" },
   {
@@ -92,7 +92,7 @@ export const categories = [
     label: "Min",
     section: "middle",
     input: true,
-    hint: "Lowest roll score — must be at least 5."
+    hint: "Lowest roll score — must be at least 5.",
   },
   {
     key: "diff",
@@ -101,7 +101,7 @@ export const categories = [
     section: "middle",
     computed: true,
     style: "total",
-    hint: "Classic Yamb difference rule"
+    hint: "Classic Yamb difference rule",
   },
   {
     key: "tris",
@@ -110,7 +110,7 @@ export const categories = [
     section: "lower",
     input: true,
     hint: "Three matching dice — ignore the other dice. Example: 3,3,3,4,5 → enter 19 (9 + 10 bonus).",
-    invalidMessage: "Three of a kind scores must equal the triple sum plus 10 bonus points."
+    invalidMessage: "Three of a kind scores must equal the triple sum plus 10 bonus points.",
   },
   {
     key: "straight",
@@ -119,7 +119,7 @@ export const categories = [
     section: "lower",
     input: true,
     hint: "Straights score 35 (1-2-3-4-5) or 45 (2-3-4-5-6). Enter 0 if you missed the straight.",
-    invalidMessage: "Straight scores can only be 0, 35, or 45."
+    invalidMessage: "Straight scores can only be 0, 35, or 45.",
   },
   {
     key: "full",
@@ -128,7 +128,7 @@ export const categories = [
     section: "lower",
     input: true,
     hint: "Three of a kind plus a pair. Example: 6,6,6,5,5 → enter 58 (28 + 30 bonus).",
-    invalidMessage: "Full house scores must be the triple-plus-pair sum plus 30 bonus points."
+    invalidMessage: "Full house scores must be the triple-plus-pair sum plus 30 bonus points.",
   },
   {
     key: "poker",
@@ -137,7 +137,7 @@ export const categories = [
     section: "lower",
     input: true,
     hint: "Four of a kind. Example: 6,6,6,6,2 → enter 64 (24 + 40 bonus).",
-    invalidMessage: "Poker scores must be the four-of-a-kind sum plus 40 bonus points."
+    invalidMessage: "Poker scores must be the four-of-a-kind sum plus 40 bonus points.",
   },
   {
     key: "yamb",
@@ -146,7 +146,7 @@ export const categories = [
     section: "lower",
     input: true,
     hint: "Five of a kind. Example: 4,4,4,4,4 → enter 70 (20 + 50 bonus).",
-    invalidMessage: "Yamb scores must be the five-of-a-kind sum plus 50 bonus points."
+    invalidMessage: "Yamb scores must be the five-of-a-kind sum plus 50 bonus points.",
   },
   {
     key: "lowerSubtotal",
@@ -155,7 +155,7 @@ export const categories = [
     section: "lowerTotal",
     computed: true,
     style: "total",
-    hint: "Sum of tris, straight, full, poker, and yamb (excludes diff)."
+    hint: "Sum of tris, straight, full, poker, and yamb (excludes diff).",
   },
   {
     key: "grandTotal",
@@ -163,8 +163,8 @@ export const categories = [
     subLabel: "total",
     section: "grandTotal",
     computed: true,
-    style: "total-strong"
-  }
+    style: "total-strong",
+  },
 ];
 
 const categoryValidation = new Map();
@@ -177,7 +177,7 @@ const UPPER_FACES = [
   { key: "threes", face: 3 },
   { key: "fours", face: 4 },
   { key: "fives", face: 5 },
-  { key: "sixes", face: 6 }
+  { key: "sixes", face: 6 },
 ];
 
 function createUpperAllowed(face) {
@@ -243,43 +243,65 @@ function registerValidation(key, config) {
 UPPER_FACES.forEach(({ key, face }) => {
   const allowed = createUpperAllowed(face);
   const category = categoryByKey.get(key);
-  const message = category?.invalidMessage ?? `Enter one of: ${Array.from(allowed).sort((a, b) => a - b).join(", ")}.`;
+  const message =
+    category?.invalidMessage ??
+    `Enter one of: ${Array.from(allowed)
+      .sort((a, b) => a - b)
+      .join(", ")}.`;
   registerValidation(key, { type: "set", allowed, message });
 });
 
-registerValidation("max", { type: "range", min: 5, max: 30, message: "Max must be an integer between 5 and 30." });
-registerValidation("min", { type: "range", min: 5, max: 30, message: "Min must be an integer between 5 and 30." });
+registerValidation("max", {
+  type: "range",
+  min: 5,
+  max: 30,
+  message: "Max must be an integer between 5 and 30.",
+});
+registerValidation("min", {
+  type: "range",
+  min: 5,
+  max: 30,
+  message: "Min must be an integer between 5 and 30.",
+});
 registerValidation("tris", {
   type: "set",
   allowed: trisAllowed,
-  message: categoryByKey.get("tris")?.invalidMessage ?? "Three of a kind scores must equal the dice total plus 10."
+  message:
+    categoryByKey.get("tris")?.invalidMessage ??
+    "Three of a kind scores must equal the dice total plus 10.",
 });
 registerValidation("straight", {
   type: "set",
   allowed: straightAllowed,
-  message: categoryByKey.get("straight")?.invalidMessage ?? "Straight scores can only be 0, 35, or 45."
+  message:
+    categoryByKey.get("straight")?.invalidMessage ?? "Straight scores can only be 0, 35, or 45.",
 });
 registerValidation("full", {
   type: "set",
   allowed: fullAllowed,
   message:
-    categoryByKey.get("full")?.invalidMessage ?? "Full house scores must equal the dice total plus 30 bonus points."
+    categoryByKey.get("full")?.invalidMessage ??
+    "Full house scores must equal the dice total plus 30 bonus points.",
 });
 registerValidation("poker", {
   type: "set",
   allowed: pokerAllowed,
   message:
-    categoryByKey.get("poker")?.invalidMessage ?? "Poker scores must equal the dice total plus 40 bonus points."
+    categoryByKey.get("poker")?.invalidMessage ??
+    "Poker scores must equal the dice total plus 40 bonus points.",
 });
 registerValidation("yamb", {
   type: "set",
   allowed: yambAllowed,
   message:
-    categoryByKey.get("yamb")?.invalidMessage ?? "Yamb scores must equal the dice total plus 50 bonus points."
+    categoryByKey.get("yamb")?.invalidMessage ??
+    "Yamb scores must equal the dice total plus 50 bonus points.",
 });
 
 const upperKeys = ["ones", "twos", "threes", "fours", "fives", "sixes"];
-const lowerScoringKeys = categories.filter((category) => category.section === "lower").map((category) => category.key);
+const lowerScoringKeys = categories
+  .filter((category) => category.section === "lower")
+  .map((category) => category.key);
 
 export function isCategoryValueAllowed(categoryKey, value) {
   if (!Number.isFinite(value)) return false;

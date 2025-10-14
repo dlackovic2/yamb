@@ -5,27 +5,32 @@
 The following features will be implemented next:
 
 ### Supabase Integration
+
 - [ ] Create Supabase client setup
 - [ ] Define database schema (rooms, players, game_state)
 - [ ] Set up real-time subscriptions
 
 ### Room/Lobby System
+
 - [ ] Create room in database
 - [ ] Join existing room
 - [ ] Room code validation
 - [ ] Player management
 
 ### Turn Management
+
 - [ ] Track current player
 - [ ] Turn rotation logic
 - [ ] Turn timeout (optional)
 
 ### Real-time Updates
+
 - [ ] Sync game state across players
 - [ ] Broadcast score updates
 - [ ] Handle player disconnections
 
 ### Live Player Status
+
 - [ ] Show who's currently rolling
 - [ ] Display other players' progress
 - [ ] Indicate when players finish turns
@@ -77,6 +82,7 @@ CREATE TABLE turn_events (
 ## Environment Setup for Phase 2
 
 Create `.env.local` with:
+
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key

@@ -5,16 +5,16 @@
 
 export const GameMode = {
   LOCATION: {
-    LOCAL: 'local',
-    ONLINE: 'online'
+    LOCAL: "local",
+    ONLINE: "online",
   },
   DICE: {
-    PHYSICAL: 'physical',
-    VIRTUAL: 'virtual'
-  }
+    PHYSICAL: "physical",
+    VIRTUAL: "virtual",
+  },
 };
 
-const GAME_MODE_STORAGE_KEY = 'yamb-game-mode';
+const GAME_MODE_STORAGE_KEY = "yamb-game-mode";
 
 /**
  * Create default game mode configuration
@@ -26,7 +26,7 @@ export function createDefaultGameMode() {
     dice: GameMode.DICE.PHYSICAL,
     roomCode: null,
     playerId: null,
-    playerName: null
+    playerName: null,
   };
 }
 
@@ -42,7 +42,7 @@ export function loadGameMode() {
       return { ...createDefaultGameMode(), ...parsed };
     }
   } catch (error) {
-    console.error('Failed to load game mode:', error);
+    console.error("Failed to load game mode:", error);
   }
   return createDefaultGameMode();
 }
@@ -55,7 +55,7 @@ export function saveGameMode(mode) {
   try {
     localStorage.setItem(GAME_MODE_STORAGE_KEY, JSON.stringify(mode));
   } catch (error) {
-    console.error('Failed to save game mode:', error);
+    console.error("Failed to save game mode:", error);
   }
 }
 
@@ -101,8 +101,8 @@ export function resetGameMode() {
  * @returns {string} 6-character room code
  */
 export function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous characters
-  let code = '';
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous characters
+  let code = "";
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -123,5 +123,5 @@ export function generatePlayerId() {
  * @returns {boolean} True if valid format
  */
 export function isValidRoomCode(code) {
-  return typeof code === 'string' && /^[A-Z0-9]{6}$/.test(code);
+  return typeof code === "string" && /^[A-Z0-9]{6}$/.test(code);
 }

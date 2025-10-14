@@ -1,10 +1,10 @@
 /**
  * Real-time Service
- * 
+ *
  * Handles real-time subscriptions for live game updates using Supabase Realtime
  */
 
-import { supabase } from './supabaseClient.js';
+import { supabase } from "./supabaseClient.js";
 
 // Store active subscriptions
 const activeSubscriptions = new Map();
@@ -31,7 +31,7 @@ export function subscribeToGame(gameId, callbacks = {}) {
     existingChannels: typeof supabase.getChannels === 'function' ? supabase.getChannels().length : undefined
   });
   */
-  
+
   const {
     playerId = null,
     onGameUpdate = () => {},
@@ -41,114 +41,115 @@ export function subscribeToGame(gameId, callbacks = {}) {
     onPresenceSync = () => {},
     onPresenceJoin = () => {},
     onPresenceLeave = () => {},
-    onStatusChange = () => {}
+    onStatusChange = () => {},
   } = callbacks;
-  
+
   // Create a channel for this game
   const subscriptionId = createSubscriptionId(gameId);
-  const channelTopic = `game:${subscriptionId.replace(/:/g, '-')}`;
+  const channelTopic = `game:${subscriptionId.replace(/:/g, "-")}`;
 
   const channel = playerId
     ? supabase.channel(channelTopic, {
         config: {
-          presence: { key: playerId }
-        }
+          presence: { key: playerId },
+        },
       })
     : supabase.channel(channelTopic);
-  
+
   if (playerId) {
-    channel.on('presence', { event: 'sync' }, () => {
+    channel.on("presence", { event: "sync" }, () => {
       try {
         const presenceState = channel.presenceState();
         onPresenceSync(presenceState);
       } catch (error) {
-        console.error('Failed to process presence sync:', error);
+        console.error("Failed to process presence sync:", error);
       }
     });
 
-    channel.on('presence', { event: 'join' }, (payload) => {
+    channel.on("presence", { event: "join" }, (payload) => {
       try {
         onPresenceJoin(payload, channel.presenceState());
       } catch (error) {
-        console.error('Failed to process presence join:', error);
+        console.error("Failed to process presence join:", error);
       }
     });
 
-    channel.on('presence', { event: 'leave' }, (payload) => {
+    channel.on("presence", { event: "leave" }, (payload) => {
       try {
         onPresenceLeave(payload, channel.presenceState());
       } catch (error) {
-        console.error('Failed to process presence leave:', error);
+        console.error("Failed to process presence leave:", error);
       }
     });
   }
-  
+
   // Subscribe to games table changes
   channel.on(
-    'postgres_changes',
+    "postgres_changes",
     {
-      event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-      schema: 'public',
-      table: 'games',
-      filter: `id=eq.${gameId}`
+      event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+      schema: "public",
+      table: "games",
+      filter: `id=eq.${gameId}`,
     },
     (payload) => {
       //console.log('📊 Game update:', payload);
       onGameUpdate(payload);
     }
   );
-  
+
   // Subscribe to players table changes
   channel.on(
-    'postgres_changes',
+    "postgres_changes",
     {
-      event: '*',
-      schema: 'public',
-      table: 'players',
-      filter: `game_id=eq.${gameId}`
+      event: "*",
+      schema: "public",
+      table: "players",
+      filter: `game_id=eq.${gameId}`,
     },
     (payload) => {
       //console.log('👥 Player update:', payload);
       onPlayerUpdate(payload);
     }
   );
-  
+
   // Subscribe to game_state table changes
   channel.on(
-    'postgres_changes',
+    "postgres_changes",
     {
-      event: '*',
-      schema: 'public',
-      table: 'game_state',
-      filter: `game_id=eq.${gameId}`
+      event: "*",
+      schema: "public",
+      table: "game_state",
+      filter: `game_id=eq.${gameId}`,
     },
     (payload) => {
       //console.log('🎲 State update:', payload);
       onStateUpdate(payload);
     }
   );
-  
+
   // Subscribe to game_actions table changes
   channel.on(
-    'postgres_changes',
+    "postgres_changes",
     {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'game_actions',
-      filter: `game_id=eq.${gameId}`
+      event: "INSERT",
+      schema: "public",
+      table: "game_actions",
+      filter: `game_id=eq.${gameId}`,
     },
     (payload) => {
       //console.log('🎬 Action update:', payload);
       onActionUpdate(payload);
     }
   );
-  
+
   // Subscribe to the channel
   channel.subscribe((status, err) => {
-    const channelState = channel?.state ?? 'unknown';
-    const socketState = typeof channel?.socket?.connectionState === 'function'
-      ? channel.socket.connectionState()
-      : channel?.socket?.state ?? null;
+    const channelState = channel?.state ?? "unknown";
+    const socketState =
+      typeof channel?.socket?.connectionState === "function"
+        ? channel.socket.connectionState()
+        : (channel?.socket?.state ?? null);
 
     /*
     console.log(`📡 Subscription status: ${status}`, {
@@ -163,38 +164,38 @@ export function subscribeToGame(gameId, callbacks = {}) {
     });
     */
 
-    if (typeof onStatusChange === 'function') {
+    if (typeof onStatusChange === "function") {
       try {
         onStatusChange(status, {
           error: err ?? null,
           subscriptionId,
           channelTopic,
           socketState,
-          channelState
+          channelState,
         });
       } catch (error) {
-        console.error('Realtime status handler failed:', error);
+        console.error("Realtime status handler failed:", error);
       }
     }
 
-    if (status === 'SUBSCRIBED') {
+    if (status === "SUBSCRIBED") {
       //console.log('✅ Successfully subscribed to game updates');
       if (playerId) {
         channel
           .track({
             playerId,
-            connectedAt: new Date().toISOString()
+            connectedAt: new Date().toISOString(),
           })
-          .catch(error => {
-            console.error('Failed to track presence:', error);
+          .catch((error) => {
+            console.error("Failed to track presence:", error);
           });
       }
     }
   });
-  
+
   // Store the subscription
   activeSubscriptions.set(subscriptionId, { channel, gameId, channelTopic });
-  
+
   // Return unsubscribe function
   const unsubscribe = async () => {
     /*console.log('🔕 Unsubscribing from game:', gameId, {
@@ -204,11 +205,11 @@ export function subscribeToGame(gameId, callbacks = {}) {
     });
     */
     try {
-      if (typeof channel.untrack === 'function') {
+      if (typeof channel.untrack === "function") {
         await channel.untrack();
       }
     } catch (error) {
-      console.warn('Failed to untrack presence during unsubscribe:', error);
+      console.warn("Failed to untrack presence during unsubscribe:", error);
     }
     await supabase.removeChannel(channel);
     activeSubscriptions.delete(subscriptionId);
@@ -239,11 +240,11 @@ export async function unsubscribeFromGame(gameId) {
     });
     */
     try {
-      if (typeof channel.untrack === 'function') {
+      if (typeof channel.untrack === "function") {
         await channel.untrack();
       }
     } catch (error) {
-      console.warn('Failed to untrack presence during explicit unsubscribe:', error);
+      console.warn("Failed to untrack presence during explicit unsubscribe:", error);
     }
     await supabase.removeChannel(channel);
     activeSubscriptions.delete(subscriptionId);
@@ -258,7 +259,7 @@ export async function unsubscribeAll() {
   for (const [subscriptionId, entry] of activeSubscriptions.entries()) {
     const { gameId, channel, channelTopic } = entry;
     try {
-      if (typeof channel.untrack === 'function') {
+      if (typeof channel.untrack === "function") {
         await channel.untrack();
       }
     } catch (error) {
@@ -296,5 +297,5 @@ export default {
   unsubscribeFromGame,
   unsubscribeAll,
   getActiveSubscriptionsCount,
-  isSubscribed
+  isSubscribed,
 };

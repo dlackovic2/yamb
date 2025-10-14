@@ -2,8 +2,8 @@ import { defineConfig } from "vite";
 import fs from "fs";
 import path from "path";
 
-const certPath = path.resolve(__dirname, 'localhost+1.pem');
-const keyPath = path.resolve(__dirname, 'localhost+1-key.pem');
+const certPath = path.resolve(__dirname, "localhost+1.pem");
+const keyPath = path.resolve(__dirname, "localhost+1-key.pem");
 const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 export default defineConfig({
@@ -14,18 +14,18 @@ export default defineConfig({
     ...(hasCerts && {
       https: {
         key: fs.readFileSync(keyPath),
-        cert: fs.readFileSync(certPath)
-      }
-    })
+        cert: fs.readFileSync(certPath),
+      },
+    }),
   },
   preview: {
     port: 4173,
     ...(hasCerts && {
       https: {
         key: fs.readFileSync(keyPath),
-        cert: fs.readFileSync(certPath)
-      }
-    })
+        cert: fs.readFileSync(certPath),
+      },
+    }),
   },
   build: {
     outDir: "dist",
@@ -33,8 +33,8 @@ export default defineConfig({
     minify: "esbuild",
     rollupOptions: {
       output: {
-        manualChunks: undefined
-      }
-    }
-  }
+        manualChunks: undefined,
+      },
+    },
+  },
 });

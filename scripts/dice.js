@@ -17,10 +17,10 @@ function secureRandom(min, max) {
   const bytesNeeded = Math.ceil(Math.log2(range) / 8);
   const maxValue = Math.pow(256, bytesNeeded);
   const rejectionThreshold = Math.floor(maxValue / range) * range;
-  
+
   let randomValue;
   const randomBytes = new Uint8Array(bytesNeeded);
-  
+
   do {
     crypto.getRandomValues(randomBytes);
     randomValue = 0;
@@ -28,7 +28,7 @@ function secureRandom(min, max) {
       randomValue = randomValue * 256 + randomBytes[i];
     }
   } while (randomValue >= rejectionThreshold);
-  
+
   return min + (randomValue % range);
 }
 
@@ -63,7 +63,7 @@ export function createDiceState() {
     locked: [false, false, false, false, false], // Which dice are locked/kept
     rollsRemaining: 3,
     announced: null, // Category announced (for announce column)
-    history: [] // History of all rolls in this turn
+    history: [], // History of all rolls in this turn
   };
 }
 
@@ -76,22 +76,25 @@ export function rollDiceWithLocked(state) {
   if (state.rollsRemaining <= 0) {
     return state;
   }
-  
+
   const newValues = state.values.map((value, index) => {
     return state.locked[index] ? value : rollDie();
   });
-  
+
   const newState = {
     ...state,
     values: newValues,
     rollsRemaining: state.rollsRemaining - 1,
-    history: [...state.history, {
-      roll: state.rollsRemaining,
-      values: [...newValues],
-      locked: [...state.locked]
-    }]
+    history: [
+      ...state.history,
+      {
+        roll: state.rollsRemaining,
+        values: [...newValues],
+        locked: [...state.locked],
+      },
+    ],
   };
-  
+
   return newState;
 }
 
@@ -105,13 +108,13 @@ export function toggleDiceLock(state, index) {
   if (index < 0 || index >= DICE_COUNT) {
     return state;
   }
-  
+
   const newLocked = [...state.locked];
   newLocked[index] = !newLocked[index];
-  
+
   return {
     ...state,
-    locked: newLocked
+    locked: newLocked,
   };
 }
 
@@ -132,7 +135,7 @@ export function resetDiceState() {
 export function setAnnouncement(state, category) {
   return {
     ...state,
-    announced: category
+    announced: category,
   };
 }
 
@@ -152,7 +155,7 @@ export function sumDice(values) {
  */
 export function countFaces(values) {
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-  values.forEach(val => {
+  values.forEach((val) => {
     if (val >= 1 && val <= 6) {
       counts[val]++;
     }
@@ -178,15 +181,15 @@ export function maxOfAKind(values) {
 export function isStraight(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const unique = [...new Set(sorted)];
-  
+
   if (unique.length !== 5) return false;
-  
+
   for (let i = 1; i < unique.length; i++) {
     if (unique[i] !== unique[i - 1] + 1) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -196,7 +199,9 @@ export function isStraight(values) {
  * @returns {boolean} True if full house
  */
 export function isFullHouse(values) {
-  const counts = Object.values(countFaces(values)).filter(c => c > 0).sort();
+  const counts = Object.values(countFaces(values))
+    .filter((c) => c > 0)
+    .sort();
   return counts.length === 2 && counts[0] === 2 && counts[1] === 3;
 }
 
@@ -230,101 +235,101 @@ export function getPossibleScores(values, currentScores, column) {
   const counts = countFaces(values);
   const total = sumDice(values);
   const columnData = currentScores?.columns?.[column] || {};
-  
+
   // Upper section (1-6)
   for (let face = 1; face <= 6; face++) {
-    const key = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][face - 1];
+    const key = ["ones", "twos", "threes", "fours", "fives", "sixes"][face - 1];
     if (columnData[key] === null || columnData[key] === undefined) {
       options.push({
         category: key,
         label: `${face}'s`,
         value: counts[face] * face,
-        description: `${counts[face]} × ${face} = ${counts[face] * face}`
+        description: `${counts[face]} × ${face} = ${counts[face] * face}`,
       });
     }
   }
-  
+
   // Middle section
-  if ((columnData.max === null || columnData.max === undefined)) {
+  if (columnData.max === null || columnData.max === undefined) {
     options.push({
-      category: 'max',
-      label: 'Max',
-      value: total,
-      description: `Sum: ${total}`
-    });
-  }
-  
-  if ((columnData.min === null || columnData.min === undefined)) {
-    options.push({
-      category: 'min',
-      label: 'Min',
+      category: "max",
+      label: "Max",
       value: total,
       description: `Sum: ${total}`,
-      warning: total < 5 ? 'Must be at least 5' : null
     });
   }
-  
+
+  if (columnData.min === null || columnData.min === undefined) {
+    options.push({
+      category: "min",
+      label: "Min",
+      value: total,
+      description: `Sum: ${total}`,
+      warning: total < 5 ? "Must be at least 5" : null,
+    });
+  }
+
   // Lower section
-  if ((columnData.tris === null || columnData.tris === undefined)) {
+  if (columnData.tris === null || columnData.tris === undefined) {
     const canScore = maxOfAKind(values) >= 3;
     options.push({
-      category: 'tris',
-      label: 'Tris',
+      category: "tris",
+      label: "Tris",
       value: canScore ? total + 10 : 0,
-      description: canScore ? `Sum + 10 = ${total + 10}` : 'No 3-of-a-kind',
-      available: canScore
+      description: canScore ? `Sum + 10 = ${total + 10}` : "No 3-of-a-kind",
+      available: canScore,
     });
   }
-  
-  if ((columnData.straight === null || columnData.straight === undefined)) {
+
+  if (columnData.straight === null || columnData.straight === undefined) {
     const canScore = isStraight(values);
     options.push({
-      category: 'straight',
-      label: 'Straight',
+      category: "straight",
+      label: "Straight",
       value: canScore ? total + 20 : 0,
-      description: canScore ? `Sum + 20 = ${total + 20}` : 'Not a straight',
-      available: canScore
+      description: canScore ? `Sum + 20 = ${total + 20}` : "Not a straight",
+      available: canScore,
     });
   }
-  
-  if ((columnData.full === null || columnData.full === undefined)) {
+
+  if (columnData.full === null || columnData.full === undefined) {
     const canScore = isFullHouse(values);
     options.push({
-      category: 'full',
-      label: 'Full House',
+      category: "full",
+      label: "Full House",
       value: canScore ? total + 30 : 0,
-      description: canScore ? `Sum + 30 = ${total + 30}` : 'Not a full house',
-      available: canScore
+      description: canScore ? `Sum + 30 = ${total + 30}` : "Not a full house",
+      available: canScore,
     });
   }
-  
-  if ((columnData.poker === null || columnData.poker === undefined)) {
+
+  if (columnData.poker === null || columnData.poker === undefined) {
     const canScore = isPoker(values);
     options.push({
-      category: 'poker',
-      label: 'Poker',
+      category: "poker",
+      label: "Poker",
       value: canScore ? total + 40 : 0,
-      description: canScore ? `Sum + 40 = ${total + 40}` : 'No 4-of-a-kind',
-      available: canScore
+      description: canScore ? `Sum + 40 = ${total + 40}` : "No 4-of-a-kind",
+      available: canScore,
     });
   }
-  
-  if ((columnData.yamb === null || columnData.yamb === undefined)) {
+
+  if (columnData.yamb === null || columnData.yamb === undefined) {
     const canScore = isYamb(values);
     options.push({
-      category: 'yamb',
-      label: 'Yamb',
+      category: "yamb",
+      label: "Yamb",
       value: canScore ? total + 50 : 0,
-      description: canScore ? `Sum + 50 = ${total + 50}` : 'No 5-of-a-kind',
-      available: canScore
+      description: canScore ? `Sum + 50 = ${total + 50}` : "No 5-of-a-kind",
+      available: canScore,
     });
   }
-  
+
   return options;
 }
 
 export const DICE_CONSTANTS = {
   DICE_COUNT,
   DICE_FACES,
-  MAX_ROLLS: 3
+  MAX_ROLLS: 3,
 };

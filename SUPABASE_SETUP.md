@@ -3,12 +3,14 @@
 ## Phase 1: Supabase Account & Project Setup
 
 ### Step 1: Create Supabase Account
+
 1. Go to [https://supabase.com](https://supabase.com)
 2. Click "Start your project" or "Sign In"
 3. Sign up using GitHub, Google, or email
 4. Verify your email if required
 
 ### Step 2: Create a New Project
+
 1. Click "New Project" in your Supabase dashboard
 2. Fill in the project details:
    - **Name**: `yamb-game` (or your preferred name)
@@ -19,7 +21,9 @@
 4. Wait 2-3 minutes for the project to be provisioned
 
 ### Step 3: Get Your Project Credentials
+
 Once your project is ready:
+
 1. Go to **Project Settings** (gear icon in left sidebar)
 2. Click **API** in the settings menu
 3. Copy and save these values:
@@ -37,12 +41,14 @@ Once your project is ready:
 Go to **SQL Editor** in your Supabase dashboard and run these SQL commands:
 
 #### 1. Enable UUID Extension (if not already enabled)
+
 ```sql
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
 #### 2. Create Games Table
+
 ```sql
 -- Games table: stores game metadata and state
 CREATE TABLE games (
@@ -71,6 +77,7 @@ CREATE INDEX idx_games_created_at ON games(created_at DESC);
 ```
 
 #### 3. Create Players Table
+
 ```sql
 -- Players table: stores player info for each game
 CREATE TABLE players (
@@ -82,7 +89,7 @@ CREATE TABLE players (
   connection_status VARCHAR(20) DEFAULT 'connected' CHECK (connection_status IN ('connected', 'disconnected')),
   last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Constraint: unique player order within a game
   UNIQUE(game_id, player_order)
 );
@@ -93,6 +100,7 @@ CREATE INDEX idx_players_connection ON players(connection_status);
 ```
 
 #### 4. Create Game State Table
+
 ```sql
 -- Game state table: stores the scorecard and dice state for each player
 CREATE TABLE game_state (
@@ -106,7 +114,7 @@ CREATE TABLE game_state (
   last_action VARCHAR(50),
   last_action_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Constraint: one state per player per game
   UNIQUE(game_id, player_id)
 );
@@ -118,6 +126,7 @@ CREATE INDEX idx_game_state_updated_at ON game_state(updated_at DESC);
 ```
 
 #### 5. Create Game Actions Log Table (Optional but recommended)
+
 ```sql
 -- Game actions: audit log of all game actions
 CREATE TABLE game_actions (
@@ -135,6 +144,7 @@ CREATE INDEX idx_game_actions_type ON game_actions(action_type);
 ```
 
 #### 6. Create Helper Functions
+
 ```sql
 -- Function to generate unique room codes
 CREATE OR REPLACE FUNCTION generate_room_code()
@@ -174,6 +184,7 @@ CREATE TRIGGER update_game_state_updated_at
 ### Step 5: Enable Real-time for Tables
 
 In Supabase Dashboard:
+
 1. Go to **Database** → **Replication** (in left sidebar)
 2. Find and enable real-time for these tables:
    - ✅ `games`
@@ -255,9 +266,10 @@ CREATE POLICY "Anyone can create game actions"
 ### Step 7: Test Database Connection
 
 In SQL Editor, run:
+
 ```sql
 -- Test query
-SELECT 
+SELECT
   (SELECT COUNT(*) FROM games) as games_count,
   (SELECT COUNT(*) FROM players) as players_count,
   (SELECT COUNT(*) FROM game_state) as game_state_count;
@@ -294,6 +306,7 @@ Make sure `.env.local` is in your `.gitignore`:
 ## Next Steps
 
 Once you've completed all these steps, you're ready to:
+
 1. ✅ Install Supabase client library (`npm install @supabase/supabase-js`)
 2. ✅ Create Supabase service module
 3. ✅ Implement online game creation and joining
@@ -305,15 +318,18 @@ Once you've completed all these steps, you're ready to:
 ## Troubleshooting
 
 ### Issue: Tables not appearing in Table Editor
+
 - Go to SQL Editor and run `\dt` to list tables
 - Check for errors in SQL execution
 
 ### Issue: Real-time not working
+
 - Verify replication is enabled for your tables
 - Check browser console for WebSocket connection errors
 - Ensure your Supabase project is not paused (free tier pauses after 1 week of inactivity)
 
 ### Issue: RLS blocking all queries
+
 - Temporarily disable RLS for testing: `ALTER TABLE table_name DISABLE ROW LEVEL SECURITY;`
 - Check policies with: `SELECT * FROM pg_policies WHERE tablename = 'your_table';`
 

@@ -3,9 +3,8 @@ import {
   computeColumnDerived,
   getCategoryValue,
   createEmptyState,
-  categories,
   columns,
-  isCategoryValueAllowed
+  isCategoryValueAllowed,
 } from "../scripts/scoring.js";
 
 describe("computeColumnDerived", () => {
@@ -23,7 +22,7 @@ describe("computeColumnDerived", () => {
       straight: 45,
       full: 58,
       poker: 64,
-      yamb: 80
+      yamb: 80,
     };
 
     const derived = computeColumnDerived(column);

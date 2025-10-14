@@ -1,14 +1,22 @@
 /**
  * Online Lobby UI
- * 
+ *
  * Handles the user interface for:
  * - Creating a new online game
  * - Joining an existing game
  * - Waiting room before game starts
  */
 
-import { createGame, joinGame, startGame, getGame, leaveGame, updatePlayerConnectionStatus, updatePlayerConnectionStatusKeepalive } from './services/onlineGameService.js';
-import { subscribeToGame } from './services/realtimeService.js';
+import {
+  createGame,
+  joinGame,
+  startGame,
+  getGame,
+  leaveGame,
+  updatePlayerConnectionStatus,
+  updatePlayerConnectionStatusKeepalive,
+} from "./services/onlineGameService.js";
+import { subscribeToGame } from "./services/realtimeService.js";
 
 export class OnlineLobbyUI {
   constructor(gameModeManager = null) {
@@ -31,15 +39,15 @@ export class OnlineLobbyUI {
     this.refreshPlayersPromise = null;
     this.lastPlayersFetchAt = 0;
     this.minimumPlayerRefreshIntervalMs = 2000;
-  this.cleanupPromise = null;
+    this.cleanupPromise = null;
     this.pendingChannelReadyListener = null;
     this.pendingChannelReadyTimeout = null;
     this.pendingChannelCleanupInFlight = false;
-    
+
     this.createDialog();
     this.attachEventListeners();
   }
-  
+
   /**
    * Create the lobby dialog HTML
    */
@@ -161,45 +169,61 @@ export class OnlineLobbyUI {
         </div>
       </dialog>
     `;
-    
+
     // Inject into the page
-    document.body.insertAdjacentHTML('beforeend', dialogHTML);
-    this.dialog = document.getElementById('online-lobby-dialog');
+    document.body.insertAdjacentHTML("beforeend", dialogHTML);
+    this.dialog = document.getElementById("online-lobby-dialog");
   }
-  
+
   /**
    * Attach event listeners to lobby UI elements
    */
   attachEventListeners() {
-  // Close button
-    document.getElementById('lobby-close-btn').addEventListener('click', () => this.handleLeaveGame());
-    this.dialog.addEventListener('cancel', (event) => {
+    // Close button
+    document
+      .getElementById("lobby-close-btn")
+      .addEventListener("click", () => this.handleLeaveGame());
+    this.dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
       this.handleLeaveGame({ skipConfirm: true });
     });
-    
+
     // Navigation buttons
-    document.getElementById('btn-create-game').addEventListener('click', () => this.showCreateForm());
-    document.getElementById('btn-join-game').addEventListener('click', () => this.showJoinForm());
-    document.getElementById('btn-back-from-create').addEventListener('click', () => this.showChoice());
-    document.getElementById('btn-back-from-join').addEventListener('click', () => this.showChoice());
-    
+    document
+      .getElementById("btn-create-game")
+      .addEventListener("click", () => this.showCreateForm());
+    document.getElementById("btn-join-game").addEventListener("click", () => this.showJoinForm());
+    document
+      .getElementById("btn-back-from-create")
+      .addEventListener("click", () => this.showChoice());
+    document
+      .getElementById("btn-back-from-join")
+      .addEventListener("click", () => this.showChoice());
+
     // Form submissions
-    document.getElementById('form-create-game').addEventListener('submit', (e) => this.handleCreateGame(e));
-    document.getElementById('form-join-game').addEventListener('submit', (e) => this.handleJoinGame(e));
-    
+    document
+      .getElementById("form-create-game")
+      .addEventListener("submit", (e) => this.handleCreateGame(e));
+    document
+      .getElementById("form-join-game")
+      .addEventListener("submit", (e) => this.handleJoinGame(e));
+
     // Room code input - auto-uppercase
-    const roomCodeInput = document.getElementById('input-room-code');
-    roomCodeInput.addEventListener('input', (e) => {
+    const roomCodeInput = document.getElementById("input-room-code");
+    roomCodeInput.addEventListener("input", (e) => {
       e.target.value = e.target.value.toUpperCase();
     });
-    
+
     // Waiting room actions
-    document.getElementById('btn-copy-code').addEventListener('click', () => this.copyRoomCode());
-    document.getElementById('btn-start-game').addEventListener('click', () => this.handleStartGame());
-    document.getElementById('btn-leave-game').addEventListener('click', () => this.handleLeaveGame());
+    document.getElementById("btn-copy-code").addEventListener("click", () => this.copyRoomCode());
+    document
+      .getElementById("btn-start-game")
+      .addEventListener("click", () => this.handleStartGame());
+    document
+      .getElementById("btn-leave-game")
+      .addEventListener("click", () => this.handleLeaveGame());
   }
-  
+
   /**
    * Show the lobby dialog
    */
@@ -217,7 +241,7 @@ export class OnlineLobbyUI {
     this.show();
     this.showCreateForm();
   }
-  
+
   /**
    * Hide the lobby dialog
    */
@@ -227,123 +251,122 @@ export class OnlineLobbyUI {
     }
     await this.cleanup();
   }
-  
+
   /**
    * Show initial choice (create or join)
    */
   showChoice() {
     this.hideAllSections();
-    document.getElementById('lobby-choice').style.display = 'block';
+    document.getElementById("lobby-choice").style.display = "block";
   }
-  
+
   /**
    * Show create game form
    */
   showCreateForm() {
     this.hideAllSections();
-    document.getElementById('lobby-create').style.display = 'block';
-    document.getElementById('input-host-name').focus();
+    document.getElementById("lobby-create").style.display = "block";
+    document.getElementById("input-host-name").focus();
   }
-  
+
   /**
    * Show join game form
    */
   showJoinForm() {
     this.hideAllSections();
-    document.getElementById('lobby-join').style.display = 'block';
-    document.getElementById('input-player-name').focus();
+    document.getElementById("lobby-join").style.display = "block";
+    document.getElementById("input-player-name").focus();
   }
-  
+
   /**
    * Show waiting room
    */
   showWaitingRoom() {
     this.hideAllSections();
-    document.getElementById('lobby-waiting').style.display = 'block';
+    document.getElementById("lobby-waiting").style.display = "block";
   }
-  
+
   /**
    * Show loading indicator
    */
   showLoading() {
-    document.getElementById('lobby-loading').style.display = 'flex';
+    document.getElementById("lobby-loading").style.display = "flex";
   }
-  
+
   /**
    * Hide loading indicator
    */
   hideLoading() {
-    document.getElementById('lobby-loading').style.display = 'none';
+    document.getElementById("lobby-loading").style.display = "none";
   }
-  
+
   /**
    * Hide all lobby sections
    */
   hideAllSections() {
-    document.getElementById('lobby-choice').style.display = 'none';
-    document.getElementById('lobby-create').style.display = 'none';
-    document.getElementById('lobby-join').style.display = 'none';
-    document.getElementById('lobby-waiting').style.display = 'none';
-    document.getElementById('join-error').style.display = 'none';
+    document.getElementById("lobby-choice").style.display = "none";
+    document.getElementById("lobby-create").style.display = "none";
+    document.getElementById("lobby-join").style.display = "none";
+    document.getElementById("lobby-waiting").style.display = "none";
+    document.getElementById("join-error").style.display = "none";
     this.hideLoading();
   }
-  
+
   /**
    * Handle create game form submission
    */
   async handleCreateGame(event) {
     event.preventDefault();
-    
-    const hostName = document.getElementById('input-host-name').value.trim();
+
+    const hostName = document.getElementById("input-host-name").value.trim();
     if (!hostName) return;
-    
+
     this.showLoading();
-    
+
     try {
       const modePayload = this.getSelectedGameModePayload();
       const result = await createGame(hostName, modePayload);
-      
+
       this.currentGameId = result.gameId;
       this.currentPlayerId = result.hostPlayerId;
       this.currentRoomCode = result.roomCode;
       this.isHost = true;
-      
+
       // Subscribe to real-time updates
-  await this.subscribeToGameUpdates();
-      
+      await this.subscribeToGameUpdates();
+
       // Show waiting room
       this.displayRoomCode(result.roomCode);
       await this.refreshPlayers();
       this.showWaitingRoom();
-      
+
       // Show start button for host
-      document.getElementById('btn-start-game').style.display = 'block';
-      
+      document.getElementById("btn-start-game").style.display = "block";
     } catch (error) {
-      console.error('Failed to create game:', error);
-      alert('Failed to create game: ' + error.message);
+      console.error("Failed to create game:", error);
+      alert("Failed to create game: " + error.message);
     } finally {
       this.hideLoading();
     }
   }
-  
+
   /**
    * Handle join game form submission
    */
   async handleJoinGame(event) {
     event.preventDefault();
-    
-    const playerName = document.getElementById('input-player-name').value.trim();
-    const roomCode = document.getElementById('input-room-code').value.trim();
-    
+
+    const playerName = document.getElementById("input-player-name").value.trim();
+    const roomCode = document.getElementById("input-room-code").value.trim();
+
     if (!playerName || !roomCode) return;
-    
+
     this.showLoading();
-    document.getElementById('join-error').style.display = 'none';
-    
+    document.getElementById("join-error").style.display = "none";
+
     try {
       const result = await joinGame(roomCode, playerName);
-      
+
       this.currentGameId = result.gameId;
       this.currentPlayerId = result.playerId;
       this.currentRoomCode = roomCode;
@@ -352,20 +375,19 @@ export class OnlineLobbyUI {
       if (result.gameMode && this.gameModeManager?.applyOnlineGameMode) {
         this.gameModeManager.applyOnlineGameMode(result.gameMode);
       }
-      
+
       // Subscribe to real-time updates
-  await this.subscribeToGameUpdates();
-      
+      await this.subscribeToGameUpdates();
+
       // Show waiting room
       this.displayRoomCode(roomCode);
       await this.refreshPlayers();
       this.showWaitingRoom();
-      
     } catch (error) {
-      console.error('Failed to join game:', error);
-      const errorDiv = document.getElementById('join-error');
+      console.error("Failed to join game:", error);
+      const errorDiv = document.getElementById("join-error");
       errorDiv.textContent = error.message;
-      errorDiv.style.display = 'block';
+      errorDiv.style.display = "block";
     } finally {
       this.hideLoading();
     }
@@ -376,13 +398,13 @@ export class OnlineLobbyUI {
    */
   getSelectedGameModePayload() {
     if (!this.gameModeManager?.getMode) {
-      return { location: 'online', dice: 'virtual' };
+      return { location: "online", dice: "virtual" };
     }
 
     const mode = this.gameModeManager.getMode();
     return {
-      location: 'online',
-      dice: mode?.dice ?? 'virtual'
+      location: "online",
+      dice: mode?.dice ?? "virtual",
     };
   }
 
@@ -391,7 +413,7 @@ export class OnlineLobbyUI {
       try {
         await this.unsubscribe();
       } catch (error) {
-        console.warn('Failed to unsubscribe existing lobby channel before resubscribing:', error);
+        console.warn("Failed to unsubscribe existing lobby channel before resubscribing:", error);
       }
     }
 
@@ -401,20 +423,20 @@ export class OnlineLobbyUI {
       onPlayerUpdate: (payload) => this.handlePlayerUpdate(payload),
       onPresenceSync: (state) => this.handlePresenceSync(state),
       onPresenceJoin: (_payload, state) => this.handlePresenceSync(state),
-      onPresenceLeave: (_payload, state) => this.handlePresenceSync(state)
+      onPresenceLeave: (_payload, state) => this.handlePresenceSync(state),
     });
 
     this.startPresenceMonitor();
     this.startConnectionHeartbeat();
   }
-  
+
   /**
    * Handle game update from real-time
    */
   async handleGameUpdate(payload) {
     //console.log('Game updated:', payload);
-    
-    if (payload.new && payload.new.status === 'in_progress') {
+
+    if (payload.new && payload.new.status === "in_progress") {
       // Game has started!
       // Store values before hiding (hide() clears them)
       const gameId = this.currentGameId;
@@ -424,7 +446,7 @@ export class OnlineLobbyUI {
 
       this.showLoading();
 
-      const finalizeCleanup = async (reason = 'channel-ready') => {
+      const finalizeCleanup = async (reason = "channel-ready") => {
         if (this.pendingChannelCleanupInFlight) {
           return;
         }
@@ -436,7 +458,7 @@ export class OnlineLobbyUI {
         }
 
         if (this.pendingChannelReadyListener) {
-          window.removeEventListener('onlineGameChannelReady', this.pendingChannelReadyListener);
+          window.removeEventListener("onlineGameChannelReady", this.pendingChannelReadyListener);
           this.pendingChannelReadyListener = null;
         }
 
@@ -444,7 +466,7 @@ export class OnlineLobbyUI {
           this.isClosing = true;
           await this.hide();
         } catch (error) {
-          console.error('Failed to hide lobby after game start:', error);
+          console.error("Failed to hide lobby after game start:", error);
         } finally {
           this.isClosing = false;
           this.pendingChannelCleanupInFlight = false;
@@ -456,30 +478,32 @@ export class OnlineLobbyUI {
         if (!event || event.detail?.gameId !== gameId) {
           return;
         }
-        await finalizeCleanup('channel-ready');
+        await finalizeCleanup("channel-ready");
       };
 
       this.pendingChannelReadyListener = handleChannelReady;
-      window.addEventListener('onlineGameChannelReady', handleChannelReady, { once: true });
+      window.addEventListener("onlineGameChannelReady", handleChannelReady, { once: true });
 
       this.pendingChannelReadyTimeout = setTimeout(() => {
-        finalizeCleanup('timeout').catch(() => {});
+        finalizeCleanup("timeout").catch(() => {});
       }, 10000);
 
       // Trigger game start (will be handled by onlineGameManager)
-      window.dispatchEvent(new CustomEvent('onlineGameStarted', {
-        detail: {
-          gameId,
-          playerId,
-          isHost,
-          roomCode
-        }
-      }));
+      window.dispatchEvent(
+        new CustomEvent("onlineGameStarted", {
+          detail: {
+            gameId,
+            playerId,
+            isHost,
+            roomCode,
+          },
+        })
+      );
 
       return;
     }
   }
-  
+
   /**
    * Handle player update from real-time
    */
@@ -488,21 +512,23 @@ export class OnlineLobbyUI {
 
     const eventType = payload?.eventType || payload?.type || payload?.action || null;
 
-    if (eventType === 'DELETE') {
+    if (eventType === "DELETE") {
       await this.removePlayerFromLobby(payload?.old);
       return;
     }
 
-    if (eventType === 'INSERT') {
+    if (eventType === "INSERT") {
       this.upsertPlayerSnapshot(payload?.new);
       await this.refreshPlayers({ force: true });
       return;
     }
 
-    if (eventType === 'UPDATE') {
+    if (eventType === "UPDATE") {
       const updatedPlayer = payload?.new;
       const previousPlayer = payload?.old;
-      const index = (this.latestPlayers || []).findIndex(player => player?.id === updatedPlayer?.id);
+      const index = (this.latestPlayers || []).findIndex(
+        (player) => player?.id === updatedPlayer?.id
+      );
       const existingPlayer = index >= 0 ? this.latestPlayers[index] : null;
 
       if (!this.isPlayerActive(updatedPlayer)) {
@@ -534,7 +560,7 @@ export class OnlineLobbyUI {
 
   extractConnectedIdsFromPresence(presenceState) {
     const connected = new Set();
-    if (!presenceState || typeof presenceState !== 'object') {
+    if (!presenceState || typeof presenceState !== "object") {
       return connected;
     }
 
@@ -543,7 +569,7 @@ export class OnlineLobbyUI {
         connected.add(key);
       }
       if (Array.isArray(presences)) {
-        presences.forEach(entry => {
+        presences.forEach((entry) => {
           if (entry && entry.playerId) {
             connected.add(entry.playerId);
           }
@@ -570,7 +596,7 @@ export class OnlineLobbyUI {
           try {
             await this.applyPresenceStatuses(idsToProcess);
           } catch (error) {
-            console.error('Failed to apply presence statuses in lobby:', error);
+            console.error("Failed to apply presence statuses in lobby:", error);
           }
         }
       })
@@ -584,9 +610,10 @@ export class OnlineLobbyUI {
       return;
     }
 
-    const activeIds = connectedIds instanceof Set
-      ? connectedIds
-      : new Set(Array.isArray(connectedIds) ? connectedIds : []);
+    const activeIds =
+      connectedIds instanceof Set
+        ? connectedIds
+        : new Set(Array.isArray(connectedIds) ? connectedIds : []);
 
     if (!Array.isArray(this.latestPlayers) || this.latestPlayers.length === 0) {
       await this.refreshPlayers({ force: true });
@@ -596,21 +623,22 @@ export class OnlineLobbyUI {
     let statusesChanged = false;
     const now = Date.now();
 
-    (this.latestPlayers || []).forEach(player => {
+    (this.latestPlayers || []).forEach((player) => {
       if (!player || !player.id) {
         return;
       }
 
-      const cachedStatus = this.presenceStatusCache.get(player.id) ?? player.connection_status ?? 'connected';
+      const cachedStatus =
+        this.presenceStatusCache.get(player.id) ?? player.connection_status ?? "connected";
       let desiredStatus = cachedStatus;
-      const lastSeenAt = typeof player.last_seen_at === 'string'
-        ? Date.parse(player.last_seen_at)
-        : null;
+      const lastSeenAt =
+        typeof player.last_seen_at === "string" ? Date.parse(player.last_seen_at) : null;
 
       if (activeIds.has(player.id)) {
-        desiredStatus = 'connected';
+        desiredStatus = "connected";
       } else if (Number.isFinite(lastSeenAt)) {
-        desiredStatus = (now - lastSeenAt) > this.connectionStaleThresholdMs ? 'disconnected' : 'connected';
+        desiredStatus =
+          now - lastSeenAt > this.connectionStaleThresholdMs ? "disconnected" : "connected";
       } else {
         desiredStatus = cachedStatus;
       }
@@ -637,10 +665,10 @@ export class OnlineLobbyUI {
         this.displayPlayers(this.latestPlayers);
       }
     } catch (error) {
-      console.error('Failed to sync player connection statuses:', error);
+      console.error("Failed to sync player connection statuses:", error);
     }
   }
-  
+
   /**
    * Refresh the players list
    */
@@ -675,7 +703,7 @@ export class OnlineLobbyUI {
         this.displayPlayers(activePlayers);
         return activePlayers;
       } catch (error) {
-        console.error('Failed to refresh players:', error);
+        console.error("Failed to refresh players:", error);
         return this.latestPlayers;
       } finally {
         this.refreshPlayersPromise = null;
@@ -685,101 +713,105 @@ export class OnlineLobbyUI {
     this.refreshPlayersPromise = fetchPromise;
     return fetchPromise;
   }
-  
+
   /**
    * Display room code
    */
   displayRoomCode(roomCode) {
-    document.getElementById('display-room-code').textContent = roomCode;
+    document.getElementById("display-room-code").textContent = roomCode;
   }
-  
+
   /**
    * Display players in waiting room
    */
   displayPlayers(players) {
-    const container = document.getElementById('players-container');
-    const countSpan = document.getElementById('player-count');
-    
+    const container = document.getElementById("players-container");
+    const countSpan = document.getElementById("player-count");
+
     const activePlayers = this.filterActivePlayers(players);
     this.latestPlayers = activePlayers;
 
-    const knownIds = new Set(activePlayers.map(player => player?.id).filter(Boolean));
+    const knownIds = new Set(activePlayers.map((player) => player?.id).filter(Boolean));
     for (const existingId of Array.from(this.presenceStatusCache.keys())) {
       if (!knownIds.has(existingId)) {
         this.presenceStatusCache.delete(existingId);
       }
     }
 
-    activePlayers.forEach(player => {
+    activePlayers.forEach((player) => {
       if (player && player.id) {
-        const status = player.connection_status || 'connected';
+        const status = player.connection_status || "connected";
         this.presenceStatusCache.set(player.id, status);
       }
     });
 
     countSpan.textContent = activePlayers.length;
-    
-    container.innerHTML = activePlayers.map(player => `
-      <div class="player-item ${player.is_host ? 'player-host' : ''}">
+
+    container.innerHTML = activePlayers
+      .map(
+        (player) => `
+      <div class="player-item ${player.is_host ? "player-host" : ""}">
         <span class="player-name">${player.player_name}</span>
-        ${player.is_host ? '<span class="player-badge">Host</span>' : ''}
-        <span class="player-status ${player.connection_status === 'connected' ? 'status-connected' : 'status-disconnected'}">
-          ${player.connection_status === 'connected' ? '🟢' : '🔴'}
+        ${player.is_host ? '<span class="player-badge">Host</span>' : ""}
+        <span class="player-status ${player.connection_status === "connected" ? "status-connected" : "status-disconnected"}">
+          ${player.connection_status === "connected" ? "🟢" : "🔴"}
         </span>
       </div>
-    `).join('');
-    
+    `
+      )
+      .join("");
+
     // Update waiting message
-    const waitingMsg = document.getElementById('waiting-message');
+    const waitingMsg = document.getElementById("waiting-message");
     if (activePlayers.length < 2) {
-      waitingMsg.textContent = 'Waiting for another player to join...';
-      waitingMsg.style.display = 'block';
+      waitingMsg.textContent = "Waiting for another player to join...";
+      waitingMsg.style.display = "block";
     } else {
-      waitingMsg.textContent = 'Ready to start!';
-      waitingMsg.style.display = this.isHost ? 'block' : 'none';
+      waitingMsg.textContent = "Ready to start!";
+      waitingMsg.style.display = this.isHost ? "block" : "none";
     }
   }
-  
+
   /**
    * Copy room code to clipboard
    */
   async copyRoomCode() {
     try {
       await navigator.clipboard.writeText(this.currentRoomCode);
-      const btn = document.getElementById('btn-copy-code');
+      const btn = document.getElementById("btn-copy-code");
       const originalText = btn.textContent;
-      btn.textContent = '✅ Copied!';
+      btn.textContent = "✅ Copied!";
       setTimeout(() => {
         btn.textContent = originalText;
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
-      alert('Room code: ' + this.currentRoomCode);
+      console.error("Failed to copy:", error);
+      alert("Room code: " + this.currentRoomCode);
     }
   }
-  
+
   /**
    * Handle start game button click
    */
   async handleStartGame() {
     if (!this.isHost) return;
-    
+
     //console.log('🎮 handleStartGame called');
     //console.log('  currentGameId:', this.currentGameId, 'type:', typeof this.currentGameId);
     //console.log('  currentPlayerId:', this.currentPlayerId, 'type:', typeof this.currentPlayerId);
-    
+
     this.showLoading();
-    
+
     try {
       await startGame(this.currentGameId, this.currentPlayerId);
       // Game update will trigger via real-time subscription
     } catch (error) {
-      console.error('Failed to start game:', error);
-      alert('Failed to start game: ' + error.message);
+      console.error("Failed to start game:", error);
+      alert("Failed to start game: " + error.message);
       this.hideLoading();
     }
   }
-  
+
   /**
    * Handle leave game
    */
@@ -791,7 +823,7 @@ export class OnlineLobbyUI {
     const hasJoinedGame = this.currentGameId && this.currentPlayerId;
 
     if (hasJoinedGame && !skipConfirm) {
-      const confirmed = confirm('Are you sure you want to leave the game?');
+      const confirmed = confirm("Are you sure you want to leave the game?");
       if (!confirmed) {
         return;
       }
@@ -809,8 +841,8 @@ export class OnlineLobbyUI {
       this.showLoading();
       await leaveGame(this.currentGameId, this.currentPlayerId);
     } catch (error) {
-      console.error('Failed to leave game:', error);
-      alert('Failed to leave game. Please try again.');
+      console.error("Failed to leave game:", error);
+      alert("Failed to leave game. Please try again.");
       this.hideLoading();
       this.isClosing = false;
       return;
@@ -820,7 +852,7 @@ export class OnlineLobbyUI {
     await this.hide();
     this.isClosing = false;
   }
-  
+
   /**
    * Cleanup when closing dialog
    */
@@ -837,7 +869,7 @@ export class OnlineLobbyUI {
         }
 
         if (this.pendingChannelReadyListener) {
-          window.removeEventListener('onlineGameChannelReady', this.pendingChannelReadyListener);
+          window.removeEventListener("onlineGameChannelReady", this.pendingChannelReadyListener);
           this.pendingChannelReadyListener = null;
         }
 
@@ -847,7 +879,7 @@ export class OnlineLobbyUI {
           try {
             await this.unsubscribe();
           } catch (error) {
-            console.warn('Failed to unsubscribe lobby channel during cleanup:', error);
+            console.warn("Failed to unsubscribe lobby channel during cleanup:", error);
           }
           this.unsubscribe = null;
         }
@@ -868,8 +900,8 @@ export class OnlineLobbyUI {
         this.lastPlayersFetchAt = 0;
 
         // Reset forms safely if elements exist
-        document.getElementById('form-create-game')?.reset();
-        document.getElementById('form-join-game')?.reset();
+        document.getElementById("form-create-game")?.reset();
+        document.getElementById("form-join-game")?.reset();
 
         this.hideLoading();
       } finally {
@@ -881,11 +913,18 @@ export class OnlineLobbyUI {
   }
 
   isPlayerActive(player) {
-    if (!player || typeof player !== 'object') {
+    if (!player || typeof player !== "object") {
       return false;
     }
 
-    if (player.deleted_at || player.deletedAt || player.removed_at || player.removedAt || player.left_at || player.leftAt) {
+    if (
+      player.deleted_at ||
+      player.deletedAt ||
+      player.removed_at ||
+      player.removedAt ||
+      player.left_at ||
+      player.leftAt
+    ) {
       return false;
     }
 
@@ -898,11 +937,11 @@ export class OnlineLobbyUI {
     }
 
     const state = player.status || player.state || null;
-    if (state === 'left') {
+    if (state === "left") {
       return false;
     }
 
-    if (player.connection_status === 'left') {
+    if (player.connection_status === "left") {
       return false;
     }
 
@@ -914,7 +953,7 @@ export class OnlineLobbyUI {
       return [];
     }
 
-    const filtered = players.filter(player => this.isPlayerActive(player));
+    const filtered = players.filter((player) => this.isPlayerActive(player));
     return filtered;
   }
 
@@ -933,12 +972,12 @@ export class OnlineLobbyUI {
     }
 
     const nextPlayers = [...this.latestPlayers];
-    const existingIndex = nextPlayers.findIndex(existing => existing?.id === player.id);
+    const existingIndex = nextPlayers.findIndex((existing) => existing?.id === player.id);
 
     if (existingIndex >= 0) {
       nextPlayers[existingIndex] = {
         ...nextPlayers[existingIndex],
-        ...player
+        ...player,
       };
     } else {
       nextPlayers.push(player);
@@ -949,15 +988,15 @@ export class OnlineLobbyUI {
   }
 
   async removePlayerFromLobby(playerLike) {
-    const removedId = typeof playerLike === 'string' ? playerLike : playerLike?.id;
+    const removedId = typeof playerLike === "string" ? playerLike : playerLike?.id;
     if (!removedId) {
       return;
     }
 
-    this.latestPlayers = (this.latestPlayers || []).filter(player => player?.id !== removedId);
+    this.latestPlayers = (this.latestPlayers || []).filter((player) => player?.id !== removedId);
     this.presenceStatusCache.delete(removedId);
 
-    if (this.pendingPresenceIds && typeof this.pendingPresenceIds.delete === 'function') {
+    if (this.pendingPresenceIds && typeof this.pendingPresenceIds.delete === "function") {
       this.pendingPresenceIds.delete(removedId);
     }
 
@@ -977,12 +1016,7 @@ export class OnlineLobbyUI {
       return true;
     }
 
-    const trackedFields = [
-      'connection_status',
-      'player_name',
-      'player_order',
-      'is_host'
-    ];
+    const trackedFields = ["connection_status", "player_name", "player_order", "is_host"];
 
     return trackedFields.some((field) => previousPlayer[field] !== updatedPlayer[field]);
   }
@@ -999,13 +1033,13 @@ export class OnlineLobbyUI {
         return;
       }
 
-      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-      const status = isOnline ? 'connected' : 'disconnected';
+      const isOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
+      const status = isOnline ? "connected" : "disconnected";
       updatePlayerConnectionStatusKeepalive(this.currentGameId, this.currentPlayerId, status);
     };
 
     tick();
-  this.heartbeatTimer = setInterval(tick, this.connectionHeartbeatIntervalMs);
+    this.heartbeatTimer = setInterval(tick, this.connectionHeartbeatIntervalMs);
   }
 
   stopConnectionHeartbeat() {
@@ -1043,18 +1077,18 @@ export class OnlineLobbyUI {
   buildConnectedIdSet() {
     const ids = new Set();
     const now = Date.now();
-    (this.latestPlayers || []).forEach(player => {
+    (this.latestPlayers || []).forEach((player) => {
       if (!player || !player.id) {
         return;
       }
 
-      const status = this.presenceStatusCache.get(player.id) ?? player.connection_status ?? 'connected';
-      if (status === 'connected') {
-        const lastSeenAt = typeof player.last_seen_at === 'string'
-          ? Date.parse(player.last_seen_at)
-          : null;
+      const status =
+        this.presenceStatusCache.get(player.id) ?? player.connection_status ?? "connected";
+      if (status === "connected") {
+        const lastSeenAt =
+          typeof player.last_seen_at === "string" ? Date.parse(player.last_seen_at) : null;
 
-        if (!Number.isFinite(lastSeenAt) || (now - lastSeenAt) <= this.connectionStaleThresholdMs) {
+        if (!Number.isFinite(lastSeenAt) || now - lastSeenAt <= this.connectionStaleThresholdMs) {
           ids.add(player.id);
         }
       }

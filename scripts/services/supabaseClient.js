@@ -1,11 +1,11 @@
 /**
  * Supabase Client
- * 
+ *
  * Initializes and exports a singleton Supabase client instance
  * for database and real-time operations.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Supabase configuration from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -13,8 +13,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables!');
-  console.error('Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local');
+  console.error("Missing Supabase environment variables!");
+  console.error("Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local");
 }
 
 // Create Supabase client
@@ -43,20 +43,17 @@ export function isSupabaseReady() {
  */
 export async function testConnection() {
   try {
-    const { data, error } = await supabase
-      .from('games')
-      .select('count')
-      .limit(1);
-    
+    const { data, error } = await supabase.from("games").select("count").limit(1);
+
     if (error) {
-      console.error('Supabase connection test failed:', error);
+      console.error("Supabase connection test failed:", error);
       return false;
     }
-    
+
     //console.log('✅ Supabase connection successful');
     return true;
   } catch (err) {
-    console.error('Supabase connection error:', err);
+    console.error("Supabase connection error:", err);
     return false;
   }
 }
@@ -68,7 +65,7 @@ export async function testConnection() {
 export function getConnectionStatus() {
   return {
     isConfigured: isSupabaseReady(),
-    url: supabaseUrl || 'Not configured',
+    url: supabaseUrl || "Not configured",
     hasKey: !!supabaseAnonKey,
   };
 }
@@ -81,8 +78,8 @@ if (isSupabaseReady()) {
   //console.log('🟢 Supabase client initialized');
   //console.log('📍 URL:', supabaseUrl);
 } else {
-  console.warn('🔴 Supabase client not properly configured');
-  console.warn('ℹ️ Online multiplayer features will be disabled');
+  console.warn("🔴 Supabase client not properly configured");
+  console.warn("ℹ️ Online multiplayer features will be disabled");
 }
 
 export default supabase;

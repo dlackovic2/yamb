@@ -5,7 +5,7 @@ import {
   computeColumnDerived,
   getCategoryValue,
   isCategoryValueAllowed,
-  getValidationMessage
+  getValidationMessage,
 } from "./scoring.js";
 
 import { gameModeManager } from "./gameModeManager.js";
@@ -86,7 +86,8 @@ const WAKE_LOCK_STORAGE_KEY = "yamb-keep-awake";
 const AudioContextClass =
   typeof window !== "undefined" ? window.AudioContext || window.webkitAudioContext : null;
 const speechSynthesisSupported =
-  typeof window !== "undefined" && "speechSynthesis" in window &&
+  typeof window !== "undefined" &&
+  "speechSynthesis" in window &&
   typeof window.speechSynthesis?.speak === "function";
 
 let wakeLockDesired = false;
@@ -103,7 +104,7 @@ appDialogs.forEach((dialog) => {
 
 const scrollLockState = {
   count: 0,
-  value: 0
+  value: 0,
 };
 
 let pendingStraightInput = null;
@@ -124,7 +125,7 @@ function resetGameUiState() {
       onlineManager.cleanup();
     }
   } catch (error) {
-    console.error('Failed to cleanup active online game during reset:', error);
+    console.error("Failed to cleanup active online game during reset:", error);
   }
 
   try {
@@ -138,7 +139,7 @@ function resetGameUiState() {
       gameModeManager.setOnlineManualInputEnabled(true);
     }
   } catch (error) {
-    console.error('Failed to reset game mode UI during reset:', error);
+    console.error("Failed to reset game mode UI during reset:", error);
   }
 
   performReset();
@@ -175,11 +176,11 @@ async function confirmAbandonCurrentGame(actionLabel) {
   }
 
   if (progressWarningTitle) {
-    progressWarningTitle.textContent = 'Leave current game?';
+    progressWarningTitle.textContent = "Leave current game?";
   }
 
   progressWarningMessage.textContent = message;
-  progressWarningConfirm.textContent = 'Discard & continue';
+  progressWarningConfirm.textContent = "Discard & continue";
 
   if (!showDialog(progressWarningDialog)) {
     const confirmed = window.confirm(message);
@@ -191,14 +192,14 @@ async function confirmAbandonCurrentGame(actionLabel) {
 
   return await new Promise((resolve) => {
     const handleClose = () => {
-      const confirmed = progressWarningDialog.returnValue === 'confirm';
+      const confirmed = progressWarningDialog.returnValue === "confirm";
       if (confirmed) {
         resetGameUiState();
       }
       resolve(confirmed);
     };
 
-    progressWarningDialog.addEventListener('close', handleClose, { once: true });
+    progressWarningDialog.addEventListener("close", handleClose, { once: true });
   });
 }
 
@@ -211,7 +212,7 @@ const DIE_PIP_COORDINATES = [
   [80, 50],
   [20, 80],
   [50, 80],
-  [80, 80]
+  [80, 80],
 ];
 
 const DIE_FACE_MAP = {
@@ -220,7 +221,7 @@ const DIE_FACE_MAP = {
   3: [0, 4, 8],
   4: [0, 2, 6, 8],
   5: [0, 2, 4, 6, 8],
-  6: [0, 2, 3, 5, 6, 8]
+  6: [0, 2, 3, 5, 6, 8],
 };
 
 const sequentialOrders = new Map([
@@ -239,8 +240,8 @@ const sequentialOrders = new Map([
       "straight",
       "full",
       "poker",
-      "yamb"
-    ]
+      "yamb",
+    ],
   ],
   [
     "up",
@@ -257,93 +258,15 @@ const sequentialOrders = new Map([
       "fours",
       "threes",
       "twos",
-      "ones"
-    ]
-  ]
+      "ones",
+    ],
+  ],
 ]);
 
 const sequentialErrorMessages = {
   down: "Down column must be filled from top to bottom without skipping categories.",
-  up: "Up column must be filled from bottom to top without skipping categories."
+  up: "Up column must be filled from bottom to top without skipping categories.",
 };
-
-// Parallax functions disabled - background is now static
-/*
-function applyParallaxTransforms() {
-  parallaxState.ticking = false;
-  if (!parallaxEnabled || !parallaxScene) return;
-
-  const scrollY = parallaxState.scrollY;
-  const viewportHeight = window.innerHeight || 1;
-  const maxScrollable = Math.max(document.body.scrollHeight - viewportHeight, 1);
-  const progress = Math.min(scrollY / maxScrollable, 1);
-  parallaxScene.style.setProperty("--parallax-progress", progress.toFixed(4));
-
-  parallaxLayers.forEach((layer) => {
-    const depth = Number.parseFloat(layer.dataset.depth ?? "0");
-    if (!Number.isFinite(depth) || depth <= 0) {
-      layer.style.transform = "translate3d(-50%, -50%, 0)";
-      return;
-    }
-    const translate = scrollY * depth * -0.3;
-    const scale = 1 + depth * 0.2;
-    layer.style.transform = `translate3d(-50%, calc(-50% + ${translate}px), 0) scale(${scale.toFixed(3)})`;
-  });
-}
-
-function scheduleParallaxUpdate() {
-  if (!parallaxEnabled || parallaxState.ticking) return;
-  parallaxState.ticking = true;
-  window.requestAnimationFrame(applyParallaxTransforms);
-}
-
-function handleParallaxScroll() {
-  if (!parallaxEnabled) return;
-  parallaxState.scrollY = window.scrollY ?? window.pageYOffset ?? 0;
-  scheduleParallaxUpdate();
-}
-
-function resetParallaxTransforms() {
-  parallaxScene?.style.removeProperty("--parallax-progress");
-  parallaxLayers.forEach((layer) => {
-    layer.style.transform = "translate3d(-50%, -50%, 0)";
-  });
-}
-
-function setParallaxEnabled(enabled) {
-  parallaxEnabled = Boolean(enabled) && !!parallaxScene && parallaxLayers.length > 0;
-  if (!parallaxEnabled) {
-    resetParallaxTransforms();
-    return;
-  }
-  parallaxState.scrollY = window.scrollY ?? window.pageYOffset ?? 0;
-  scheduleParallaxUpdate();
-}
-
-function setupParallaxScene() {
-  if (!parallaxScene || parallaxLayers.length === 0) return;
-
-  const onScroll = () => handleParallaxScroll();
-  const onResize = () => scheduleParallaxUpdate();
-
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onResize);
-
-  if (prefersReducedMotionQuery) {
-    setParallaxEnabled(!prefersReducedMotionQuery.matches);
-    const handleMotionChange = (event) => {
-      setParallaxEnabled(!event.matches);
-    };
-    if (typeof prefersReducedMotionQuery.addEventListener === "function") {
-      prefersReducedMotionQuery.addEventListener("change", handleMotionChange);
-    } else if (typeof prefersReducedMotionQuery.addListener === "function") {
-      prefersReducedMotionQuery.addListener(handleMotionChange);
-    }
-  } else {
-    setParallaxEnabled(true);
-  }
-}
-*/
 
 const inputCategories = categories.filter((category) => category.input);
 
@@ -361,7 +284,7 @@ const demoCompletionSheet = {
     straight: 45,
     full: 58,
     poker: 64,
-    yamb: 80
+    yamb: 80,
   },
   up: {
     ones: 2,
@@ -376,7 +299,7 @@ const demoCompletionSheet = {
     straight: 35,
     full: 58,
     poker: 60,
-    yamb: 75
+    yamb: 75,
   },
   free: {
     ones: 4,
@@ -391,7 +314,7 @@ const demoCompletionSheet = {
     straight: 45,
     full: 58,
     poker: 64,
-    yamb: 80
+    yamb: 80,
   },
   announce: {
     ones: 5,
@@ -406,8 +329,8 @@ const demoCompletionSheet = {
     straight: 35,
     full: 58,
     poker: 56,
-    yamb: 70
-  }
+    yamb: 70,
+  },
 };
 
 function hasCategoryValue(columnState, categoryKey) {
@@ -432,7 +355,7 @@ function getSequentialFailure(columnKey, categoryKey, columnState) {
 
   if (firstOpenIndex !== index) {
     return {
-      message: sequentialErrorMessages[columnKey] ?? "This column must be filled sequentially."
+      message: sequentialErrorMessages[columnKey] ?? "This column must be filled sequentially.",
     };
   }
 
@@ -443,7 +366,9 @@ function lockScroll() {
   if (scrollLockState.count === 0) {
     scrollLockState.value = window.scrollY ?? window.pageYOffset ?? 0;
     document.body.style.overflow = "hidden";
-    document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`;
+    document.body.style.paddingRight = `${
+      window.innerWidth - document.documentElement.clientWidth
+    }px`;
     document.body.setAttribute("data-scroll-locked", "true");
   }
   scrollLockState.count += 1;
@@ -502,17 +427,17 @@ registerDialog(infoDialog, {
     if (infoDialogBody) {
       infoDialogBody.textContent = "";
     }
-  }
+  },
 });
 
 registerDialog(straightDialog, {
   onClose: () => {
     pendingStraightInput = null;
-  }
+  },
 });
 
 registerDialog(announceDialog, {
-  onClose: handleAnnounceDialogClose
+  onClose: handleAnnounceDialogClose,
 });
 
 registerDialog(exportDialog, {
@@ -520,7 +445,7 @@ registerDialog(exportDialog, {
     if (exportTextarea) {
       exportTextarea.value = "";
     }
-  }
+  },
 });
 
 registerDialog(settingsDialog);
@@ -530,11 +455,11 @@ registerDialog(importDialog, {
     if (importTextarea) {
       importTextarea.value = "";
     }
-  }
+  },
 });
 
 registerDialog(resetDialog, {
-  onClose: handleResetDialogClose
+  onClose: handleResetDialogClose,
 });
 
 registerDialog(progressWarningDialog);
@@ -542,19 +467,19 @@ registerDialog(progressWarningDialog);
 registerDialog(completionDialog, {
   onClose: () => {
     clearConfetti();
-  }
+  },
 });
 
 // Register game mode dialog
-const gameModeDialog = document.getElementById('game-mode-dialog');
+const gameModeDialog = document.getElementById("game-mode-dialog");
 registerDialog(gameModeDialog);
 
 // Register virtual dice dialog
-const virtualDiceDialog = document.getElementById('virtual-dice-dialog');
+const virtualDiceDialog = document.getElementById("virtual-dice-dialog");
 registerDialog(virtualDiceDialog);
 
 // Register virtual announce select dialog (from virtualDiceUI)
-const virtualAnnounceDialog = document.getElementById('virtual-announce-select-dialog');
+const virtualAnnounceDialog = document.getElementById("virtual-announce-select-dialog");
 registerDialog(virtualAnnounceDialog);
 
 if (announceDialogClear) {
@@ -636,8 +561,7 @@ function stopAnnounceRolling() {
 }
 
 function isWakeLockSupported() {
-  return typeof navigator !== "undefined" &&
-    typeof navigator.wakeLock?.request === "function";
+  return typeof navigator !== "undefined" && typeof navigator.wakeLock?.request === "function";
 }
 
 function getStoredWakeLockPreference() {
@@ -805,8 +729,8 @@ function speakAnnouncement(categoryLabel, columnLabel) {
   if (documentLang) {
     utterance.lang = documentLang;
   }
-  utterance.rate = 0.80;
-  utterance.pitch = 1.00;
+  utterance.rate = 0.8;
+  utterance.pitch = 1.0;
 
   try {
     window.speechSynthesis.speak(utterance);
@@ -846,54 +770,54 @@ if (gameModeManager.isVirtualMode()) {
  * Shows on mobile when scrolled past the virtual dice panel
  */
 function setupBackToDiceButton() {
-  const backButton = document.getElementById('back-to-dice-button');
+  const backButton = document.getElementById("back-to-dice-button");
   if (!backButton) return;
-  
+
   let scrollTimeout;
   let isVirtualMode = false;
   let isScrollingToPanel = false; // Flag to prevent showing during scroll animation
-  
+
   // Check if we're in virtual mode
   const checkVirtualMode = () => {
     isVirtualMode = gameModeManager && gameModeManager.isVirtualMode();
     return isVirtualMode;
   };
-  
+
   // Update button visibility based on scroll position
   const updateButtonVisibility = () => {
     // Don't show button if we're currently scrolling to panel
     if (isScrollingToPanel) {
-      backButton.classList.remove('visible');
+      backButton.classList.remove("visible");
       return;
     }
-    
+
     // Always check current mode first
     const inVirtualMode = checkVirtualMode();
-    
+
     if (!inVirtualMode) {
-      backButton.classList.remove('visible');
+      backButton.classList.remove("visible");
       return;
     }
-    
-    const virtualPanel = document.getElementById('virtual-dice-main-panel');
-    if (!virtualPanel || virtualPanel.style.display === 'none') {
-      backButton.classList.remove('visible');
+
+    const virtualPanel = document.getElementById("virtual-dice-main-panel");
+    if (!virtualPanel || virtualPanel.style.display === "none") {
+      backButton.classList.remove("visible");
       return;
     }
-    
+
     // Get the bottom position of the virtual dice panel
     const panelRect = virtualPanel.getBoundingClientRect();
     const panelBottom = panelRect.bottom;
-    
+
     // Show button if we've scrolled past the virtual dice panel
     // Reduced buffer to 50px so it appears sooner
     if (panelBottom < 50) {
-      backButton.classList.add('visible');
+      backButton.classList.add("visible");
     } else {
-      backButton.classList.remove('visible');
+      backButton.classList.remove("visible");
     }
   };
-  
+
   // Handle scroll events with throttling
   const handleScroll = () => {
     if (scrollTimeout) {
@@ -903,60 +827,64 @@ function setupBackToDiceButton() {
       updateButtonVisibility();
     });
   };
-  
+
   // Handle button click - scroll to virtual dice panel
-  backButton.addEventListener('click', () => {
-    const virtualPanel = document.getElementById('virtual-dice-main-panel');
+  backButton.addEventListener("click", () => {
+    const virtualPanel = document.getElementById("virtual-dice-main-panel");
     if (!virtualPanel) return;
-    
+
     // Set flag to prevent button from showing during scroll
     isScrollingToPanel = true;
-    backButton.classList.remove('visible');
-    
+    backButton.classList.remove("visible");
+
     const panelTop = virtualPanel.getBoundingClientRect().top + window.pageYOffset;
     const offset = 20; // Small offset from top
-    
+
     window.scrollTo({
       top: panelTop - offset,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
-    
+
     // Reset flag after scroll animation completes (smooth scroll takes ~500-800ms)
     setTimeout(() => {
       isScrollingToPanel = false;
     }, 1000);
   });
-  
+
   // Listen to scroll events
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  
+  window.addEventListener("scroll", handleScroll, { passive: true });
+
   // Initial check after a short delay to allow virtual panel to be created
   setTimeout(() => {
     updateButtonVisibility();
   }, 100);
-  
+
   // Re-check when game mode might change
   const observer = new MutationObserver(() => {
     // Debounce the update
     setTimeout(updateButtonVisibility, 50);
   });
-  
+
   // Watch for changes in the layout (e.g., virtual panel being added/removed)
-  const layout = document.querySelector('.layout');
+  const layout = document.querySelector(".layout");
   if (layout) {
     observer.observe(layout, {
       childList: true,
-      subtree: false
+      subtree: false,
     });
   }
-  
+
   // Also check on window resize (viewport changes)
-  window.addEventListener('resize', () => {
-    if (scrollTimeout) {
-      window.cancelAnimationFrame(scrollTimeout);
-    }
-    scrollTimeout = window.requestAnimationFrame(updateButtonVisibility);
-  }, { passive: true });
+  window.addEventListener(
+    "resize",
+    () => {
+      if (scrollTimeout) {
+        window.cancelAnimationFrame(scrollTimeout);
+      }
+      scrollTimeout = window.requestAnimationFrame(updateButtonVisibility);
+    },
+    { passive: true }
+  );
 }
 
 function renderTable() {
@@ -1044,8 +972,8 @@ function renderTable() {
           category.key === "straight"
             ? "straight"
             : column.key === "announce"
-              ? "announce"
-              : "numeric";
+            ? "announce"
+            : "numeric";
         input.dataset.entryMode = entryMode;
         input.addEventListener("focus", handleInputFocus);
 
@@ -1079,7 +1007,7 @@ function renderTable() {
 
 function attachEvents() {
   newGameButton?.addEventListener("click", async () => {
-    if (!(await confirmAbandonCurrentGame('Starting a new game'))) {
+    if (!(await confirmAbandonCurrentGame("Starting a new game"))) {
       return;
     }
 
@@ -1087,7 +1015,7 @@ function attachEvents() {
   });
 
   joinOnlineButton?.addEventListener("click", async () => {
-    if (!(await confirmAbandonCurrentGame('Joining an online game'))) {
+    if (!(await confirmAbandonCurrentGame("Joining an online game"))) {
       return;
     }
 
@@ -1274,7 +1202,10 @@ function commitInput(input) {
 
   if (raw === "") {
     if (previousValue !== undefined) {
-      if (usingOnlineManual && gameModeManager?.handleOnlineManualClearAttempt?.(input, previousValue)) {
+      if (
+        usingOnlineManual &&
+        gameModeManager?.handleOnlineManualClearAttempt?.(input, previousValue)
+      ) {
         return;
       }
 
@@ -1321,13 +1252,16 @@ function commitInput(input) {
     return;
   }
 
-  if (usingOnlineManual && gameModeManager?.handleOnlineManualScoreCommit?.({
-    input,
-    columnKey,
-    categoryKey,
-    value: numeric,
-    previousValue
-  })) {
+  if (
+    usingOnlineManual &&
+    gameModeManager?.handleOnlineManualScoreCommit?.({
+      input,
+      columnKey,
+      categoryKey,
+      value: numeric,
+      previousValue,
+    })
+  ) {
     return;
   }
 
@@ -1338,7 +1272,7 @@ function commitInput(input) {
 
 function openStraightDialogForInput(input) {
   if (!(input instanceof HTMLInputElement)) return;
-  
+
   // Check if virtual dice mode is active
   if (gameModeManager && gameModeManager.shouldUseVirtualDice()) {
     // Virtual dice mode - don't open dialog, inputs are disabled
@@ -1349,7 +1283,7 @@ function openStraightDialogForInput(input) {
     gameModeManager?.notifyTurnLocked?.();
     return;
   }
-  
+
   const columnKey = input.dataset.column;
   const column = columns.find((item) => item.key === columnKey);
   const shouldAnnounce = column?.key === "announce";
@@ -1367,7 +1301,9 @@ function openStraightDialogForInput(input) {
 
   pendingStraightInput = input;
   if (straightDialogTitle) {
-    straightDialogTitle.textContent = column ? `Straight — ${column.label}` : "Select straight type";
+    straightDialogTitle.textContent = column
+      ? `Straight — ${column.label}`
+      : "Select straight type";
   }
   if (straightDialogDescription) {
     straightDialogDescription.textContent = column
@@ -1432,7 +1368,8 @@ function openAnnounceDialogForInput(input) {
       const columnHint = column ? ` in the ${column.label} column` : "";
       announceDialogMessage.textContent = `Waiting for your announced roll for ${category.label}${columnHint}. Enter the score once you're ready.`;
     } else {
-      announceDialogMessage.textContent = "Waiting for your announced roll. Enter the score once you're ready.";
+      announceDialogMessage.textContent =
+        "Waiting for your announced roll. Enter the score once you're ready.";
     }
   }
 
@@ -1483,7 +1420,7 @@ function openAnnounceDialogForInput(input) {
 function handleAnnounceTrigger(event) {
   const input = event.currentTarget;
   if (!(input instanceof HTMLInputElement)) return;
-  
+
   // Check if virtual dice mode is active
   if (gameModeManager && gameModeManager.shouldUseVirtualDice()) {
     // Virtual dice mode - don't open dialog, inputs are disabled
@@ -1496,7 +1433,7 @@ function handleAnnounceTrigger(event) {
     gameModeManager?.notifyTurnLocked?.();
     return;
   }
-  
+
   openAnnounceDialogForInput(input);
 }
 
@@ -1593,7 +1530,7 @@ function performReset() {
 function openExportDialog() {
   const payload = {
     exportedAt: new Date().toISOString(),
-    state
+    state,
   };
 
   if (exportTextarea) {
@@ -1601,7 +1538,9 @@ function openExportDialog() {
   }
 
   if (!showDialog(exportDialog)) {
-    window.alert("Dialog not supported. Copy the JSON from the text area: \n\n" + (exportTextarea?.value ?? ""));
+    window.alert(
+      "Dialog not supported. Copy the JSON from the text area: \n\n" + (exportTextarea?.value ?? "")
+    );
     return;
   }
 
@@ -1649,13 +1588,20 @@ function processImportPayload(raw) {
   try {
     parsed = JSON.parse(raw);
   } catch (error) {
-    openInfoDialog("Import failed", "The provided JSON could not be parsed. Please check the format and try again.");
+    openInfoDialog(
+      "Import failed",
+      "The provided JSON could not be parsed. Please check the format and try again."
+    );
     return false;
   }
 
-  const stateCandidate = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed.state ?? parsed : null;
+  const stateCandidate =
+    parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed.state ?? parsed : null;
   if (!stateCandidate || typeof stateCandidate !== "object") {
-    openInfoDialog("Import failed", "The JSON must contain a root object with a 'state' property or column data.");
+    openInfoDialog(
+      "Import failed",
+      "The JSON must contain a root object with a 'state' property or column data."
+    );
     return false;
   }
 
@@ -1760,7 +1706,7 @@ function openCompletionDialog() {
       label: column.label,
       total: derived?.grandTotal ?? 0,
       upper: derived?.upperTotal ?? 0,
-      lower: derived?.lowerSubtotal ?? 0
+      lower: derived?.lowerSubtotal ?? 0,
     };
   });
 
@@ -1774,14 +1720,18 @@ function openCompletionDialog() {
   }
 
   if (completionMessage) {
-    const overallLine = `All columns are locked in. Your grand total is ${formatScore(overallTotal)} points.`;
+    const overallLine = `All columns are locked in. Your grand total is ${formatScore(
+      overallTotal
+    )} points.`;
     completionMessage.textContent = champion
       ? `${overallLine} ${champion.label} led with ${formatScore(champion.total)}.`
       : overallLine;
   }
 
   if (!completionDialog || typeof completionDialog.showModal !== "function") {
-    const highest = champion ? `Top column: ${champion.label} — ${formatScore(champion.total)} pts` : "";
+    const highest = champion
+      ? `Top column: ${champion.label} — ${formatScore(champion.total)} pts`
+      : "";
     window.alert(`Grand total: ${formatScore(overallTotal)} pts${highest ? `\n${highest}` : ""}`);
     return;
   }
@@ -1908,7 +1858,10 @@ function updateOverallGrandTotal() {
 
 function updateSummary() {
   summaryList.innerHTML = "";
-  const totals = columns.map((column) => ({ key: column.key, total: derivedByColumn[column.key]?.grandTotal ?? 0 }));
+  const totals = columns.map((column) => ({
+    key: column.key,
+    total: derivedByColumn[column.key]?.grandTotal ?? 0,
+  }));
   const maxTotal = Math.max(...totals.map(({ total }) => total));
   const minTotal = Math.min(...totals.map(({ total }) => total));
 
@@ -1928,11 +1881,11 @@ function updateSummary() {
     title.textContent = column.label;
 
     const value = document.createElement("span");
-  value.className = "summary-value";
+    value.className = "summary-value";
     value.textContent = formatScore(total);
 
     const detail = document.createElement("small");
-  detail.className = "summary-detail";
+    detail.className = "summary-detail";
     detail.textContent = `Upper ${formatScore(upper)} • Lower ${formatScore(lower)}`;
 
     item.append(title, value, detail);
@@ -2070,32 +2023,32 @@ function applyTheme(theme) {
  */
 export function setScore(categoryKey, columnKey, value) {
   if (!columnKey || !categoryKey) {
-    console.error('Invalid category or column key');
+    console.error("Invalid category or column key");
     return false;
   }
 
   const columnState = state[columnKey] ?? (state[columnKey] = {});
   const numeric = Number(value);
-  
+
   if (!Number.isFinite(numeric)) {
-    console.error('Invalid numeric value:', value);
+    console.error("Invalid numeric value:", value);
     return false;
   }
 
   if (!isCategoryValueAllowed(categoryKey, numeric)) {
-    console.error('Value not allowed for category:', categoryKey, numeric);
+    console.error("Value not allowed for category:", categoryKey, numeric);
     return false;
   }
 
   const sequentialIssue = getSequentialFailure(columnKey, categoryKey, columnState);
   if (sequentialIssue) {
-    console.error('Sequential validation failed:', sequentialIssue.message);
+    console.error("Sequential validation failed:", sequentialIssue.message);
     return false;
   }
 
   // Set the value in state
   columnState[categoryKey] = numeric;
-  
+
   // Update the input element to reflect the change
   const input = document.querySelector(
     `.score-input[data-category="${categoryKey}"][data-column="${columnKey}"]`
@@ -2106,11 +2059,11 @@ export function setScore(categoryKey, columnKey, value) {
     input.dataset.error = "false";
     input.setCustomValidity("");
   }
-  
+
   // Save and update UI
   saveState();
   updateUI();
-  
+
   return true;
 }
 
