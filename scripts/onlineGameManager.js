@@ -15,6 +15,7 @@ import { createDiceState, rollDiceWithLocked } from './dice.js';
 import { columns, categories, computeColumnDerived, getCategoryValue, createEmptyState } from './scoring.js';
 import { GameMode } from './gameMode.js';
 
+globalThis.__YAMB_DEBUG = false;
 const TOTAL_INPUT_CELLS = columns.length * categories.filter(category => category.input).length;
 const DEBUG_LOGS_ENABLED = Boolean(globalThis?.__YAMB_DEBUG ?? import.meta?.env?.DEV ?? false);
 const debugLog = (...args) => {
@@ -73,10 +74,11 @@ export class OnlineGameManager {
     this.realtimeStatusChangedAt = 0;
     this.realtimeWarningCooldownMs = 12000;
     this.lastRealtimeWarningAt = 0;
-  this.realtimeResubscribeTimer = null;
-  this.realtimeResubscribeAttempts = 0;
-  this.realtimeMaxResubscribeAttempts = 5;
-  this.realtimeResubscribeDelayMs = 1500;
+    this.recoveringAfterReconnect = false;
+    this.realtimeResubscribeTimer = null;
+    this.realtimeResubscribeAttempts = 0;
+    this.realtimeMaxResubscribeAttempts = 5;
+    this.realtimeResubscribeDelayMs = 1500;
     this.activeRealtimeSubscriptionId = null;
     this.channelReadyNotified = false;
     this.realtimeDebugEnabled = true;
@@ -249,18 +251,18 @@ export class OnlineGameManager {
       this.usingVirtualDice = diceMode !== GameMode.DICE.PHYSICAL;
 
       this.roomCode = detail.roomCode ?? game?.room_code ?? null;
-  this.players = this.filterActivePlayers(Array.isArray(game?.players) ? game.players : []);
+      this.players = this.filterActivePlayers(Array.isArray(game?.players) ? game.players : []);
       this.refreshPlayerStatusCache(this.players);
       this.applyInitialPresenceSnapshot(this.players);
       this.pendingPresenceIds = null;
       this.presenceUpdateInFlight = false;
       this.currentTurnPlayerId = game.current_turn_player_id;
       this.updateTurnState();
-  this.startConnectionHeartbeat();
-  this.startPresenceMonitor();
+      this.startConnectionHeartbeat();
+      this.startPresenceMonitor();
       
       // Subscribe to real-time updates
-  await this.subscribeToGameUpdates();
+      await this.subscribeToGameUpdates();
       
       if (this.usingVirtualDice) {
         this.gameModeManager.showVirtualDicePanel();
@@ -286,7 +288,7 @@ export class OnlineGameManager {
     // Update UI to show online game state
     this.updateUI('handleGameStarted:init');
       
-  debugLog('✅ Online game initialized');
+    debugLog('✅ Online game initialized');
       
     } catch (error) {
       console.error('Failed to initialize online game:', error);
@@ -359,7 +361,7 @@ export class OnlineGameManager {
     // Ensure we do not stack multiple layers of wrappers from previous games
     this.restoreVirtualDiceCallbacks();
 
-  debugLog('🔗 Setting up virtual dice callbacks...');
+    debugLog('🔗 Setting up virtual dice callbacks...');
     
     // CRITICAL: Ensure state has history property before doing anything
     if (!virtualDiceUI.state.history) {
@@ -389,30 +391,30 @@ export class OnlineGameManager {
     
     // Hook into dice roll
     virtualDiceUI.roll = async () => {
-  debugLog('🎲 Roll button clicked');
-  debugLog('  - isMyTurn:', this.isMyTurn);
-  debugLog('  - currentTurnPlayerId:', this.currentTurnPlayerId);
-  debugLog('  - myPlayerId:', this.playerId);
-  debugLog('  - rollsRemaining:', virtualDiceUI.state.rollsRemaining);
+      debugLog('🎲 Roll button clicked');
+      debugLog('  - isMyTurn:', this.isMyTurn);
+      debugLog('  - currentTurnPlayerId:', this.currentTurnPlayerId);
+      debugLog('  - myPlayerId:', this.playerId);
+      debugLog('  - rollsRemaining:', virtualDiceUI.state.rollsRemaining);
 
       if (!this.canInteractThisTurn()) {
-  debugLog('❌ Not your turn, blocking roll');
+        debugLog('❌ Not your turn, blocking roll');
         this.showTurnBlockedToast();
         return;
       }
 
       if (virtualDiceUI.state.rollsRemaining <= 0) {
-  debugLog('❌ No rolls remaining');
+        debugLog('❌ No rolls remaining');
         return;
       }
 
       if (virtualDiceUI.controlsEnabled === false) {
-  debugLog('❌ Controls disabled, blocking roll');
+        debugLog('❌ Controls disabled, blocking roll');
         return;
       }
 
       if (!Array.isArray(virtualDiceUI.state.history)) {
-  console.warn('⚠️ State missing history before roll, fixing...');
+        console.warn('⚠️ State missing history before roll, fixing...');
         virtualDiceUI.state.history = [];
       }
 
@@ -444,12 +446,12 @@ export class OnlineGameManager {
         }
       });
 
-  debugLog('✅ Rolling dice...');
+      debugLog('✅ Rolling dice...');
       const nextState = rollDiceWithLocked(virtualDiceUI.state);
 
       let syncPromise = null;
       try {
-  debugLog('✅ Dice rolled locally, syncing to server...');
+      debugLog('✅ Dice rolled locally, syncing to server...');
         syncPromise = this.syncCurrentDiceState({ action: 'roll', stateOverride: nextState });
       } catch (error) {
         console.error('❌ Failed to initiate dice sync:', error);
@@ -884,11 +886,18 @@ export class OnlineGameManager {
       return;
     }
 
+    const tableName = payload?.table || null;
+    if (tableName && tableName !== 'games') {
+  debugLog('↩️ Ignoring non-game payload in handleGameUpdate', { tableName });
+      return;
+    }
+
   debugLog('🎮 Game update:', payload);
     
     if (payload.new) {
       // Update current turn player
-      if (payload.new.current_turn_player_id !== this.currentTurnPlayerId) {
+      const hasTurnField = Object.prototype.hasOwnProperty.call(payload.new, 'current_turn_player_id');
+      if (hasTurnField && payload.new.current_turn_player_id !== this.currentTurnPlayerId) {
         const oldTurnPlayerId = this.currentTurnPlayerId;
         this.currentTurnPlayerId = payload.new.current_turn_player_id;
 
@@ -1582,8 +1591,18 @@ export class OnlineGameManager {
     try {
       await updatePlayerConnectionStatus(this.gameId, this.playerId, 'connected');
       this.setLocalConnectionStatus('connected', { startReconnect: false, force: true });
-      this.showNotification('✅ Connection restored.', 'success');
+
+      let needsRecovery = !this.isRealtimeLinkHealthy() || !this.unsubscribe;
+      if (!needsRecovery && typeof options.forceRecovery === 'boolean') {
+        needsRecovery = options.forceRecovery;
+      }
+
+      if (needsRecovery) {
+        await this.recoverAfterReconnect({ silent: true });
+      }
+
       this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
+      this.showNotification('✅ Connection restored.', 'success');
     } catch (error) {
       console.error('Reconnect attempt failed.', error);
       if (isManual) {
@@ -1595,6 +1614,47 @@ export class OnlineGameManager {
       if (this.localConnectionStatus === 'disconnected') {
         this.updateTurnIndicator();
       }
+    }
+  }
+
+  async recoverAfterReconnect(options = {}) {
+    if (!this.gameId || !this.playerId) {
+      return;
+    }
+
+    if (this.recoveringAfterReconnect) {
+      return;
+    }
+
+    const { silent = true } = options || {};
+
+    this.recoveringAfterReconnect = true;
+    try {
+      if (this.realtimeResubscribeTimer) {
+        clearTimeout(this.realtimeResubscribeTimer);
+        this.realtimeResubscribeTimer = null;
+      }
+
+      this.realtimeResubscribeAttempts = 0;
+
+      this.logRealtimeEvent('post-reconnect-recovery-start', {
+        silent,
+        realtimeState: this.realtimeConnectionState
+      });
+
+      await this.rejoinGame(this.gameId, this.playerId, {
+        silent,
+        preserveStorage: true
+      });
+
+      this.logRealtimeEvent('post-reconnect-recovery-success');
+    } catch (error) {
+      this.logRealtimeEvent('post-reconnect-recovery-failed', {
+        message: error?.message || 'unknown'
+      });
+      throw error;
+    } finally {
+      this.recoveringAfterReconnect = false;
     }
   }
 
@@ -1696,6 +1756,12 @@ export class OnlineGameManager {
    */
   async handleStateUpdate(payload) {
     if (!this.gameId) {
+      return;
+    }
+
+    const tableName = payload?.table || null;
+    if (tableName && tableName !== 'game_state') {
+  debugLog('↩️ Ignoring non-state payload in handleStateUpdate', { tableName });
       return;
     }
 
@@ -1831,6 +1897,12 @@ export class OnlineGameManager {
    * Handle game action update from real-time
    */
   handleActionUpdate(payload) {
+    const tableName = payload?.table || null;
+    if (tableName && tableName !== 'game_actions') {
+  debugLog('↩️ Ignoring non-action payload in handleActionUpdate', { tableName });
+      return;
+    }
+
   debugLog('🎬 Action update:', payload);
     // Could show detailed action logs
   }
@@ -3360,6 +3432,7 @@ export class OnlineGameManager {
     this.lastRealtimeStatus = null;
     this.realtimeStatusChangedAt = 0;
     this.lastRealtimeWarningAt = 0;
+  this.recoveringAfterReconnect = false;
     this.stopReconnectLoop();
     this.localConnectionStatus = 'connected';
     for (const timer of this.pendingDisconnectNotices.values()) {
@@ -3542,9 +3615,11 @@ export class OnlineGameManager {
   /**
    * Rejoin an existing game
    */
-  async rejoinGame(gameId, playerId) {
+  async rejoinGame(gameId, playerId, options = {}) {
+    const { silent = false, preserveStorage = false } = options || {};
     try {
-  debugLog('🔄 Rejoining game...', { gameId, playerId });
+
+  debugLog('🔄 Rejoining game...', { gameId, playerId, silent });
       
       const game = await getGame(gameId);
       if (game?.game_mode && this.gameModeManager?.applyOnlineGameMode) {
@@ -3561,6 +3636,7 @@ export class OnlineGameManager {
       this.playerId = playerId;
       this.roomCode = game?.room_code ?? null;
   this.players = this.filterActivePlayers(Array.isArray(game?.players) ? game.players : []);
+    this.supportsPendingAnnouncements = null;
       this.currentTurnPlayerId = game.current_turn_player_id;
       this.currentViewPlayerId = playerId;
       this.turnChangePending = false;
@@ -3664,14 +3740,21 @@ export class OnlineGameManager {
   debugLog('✅ Game state restored');
       
   this.updateUI('rejoinGame:success');
-      this.showNotification('Reconnected successfully!', 'success');
+      if (!silent) {
+        this.showNotification('Reconnected successfully!', 'success');
+      }
       
   debugLog('✅ Rejoined game successfully');
       
     } catch (error) {
       console.error('Failed to rejoin game:', error);
-      this.showNotification('Failed to reconnect: ' + error.message, 'error');
-      localStorage.removeItem('yamb_online_game');
+      if (!silent) {
+        this.showNotification('Failed to reconnect: ' + error.message, 'error');
+      }
+      if (!preserveStorage) {
+        localStorage.removeItem('yamb_online_game');
+      }
+      throw error;
     }
   }
   

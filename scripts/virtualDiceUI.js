@@ -616,7 +616,7 @@ export class VirtualDiceUI {
             data-action="roll"
             ${needsAnnouncement && canAnnounce && this.state.rollsRemaining === 2 ? 'title="You must announce a category before rolling again!"' : ''}
           >
-            ${this.state.rollsRemaining === 3 ? '🎲 Roll Dice' : `🎲 Roll Again (${this.state.rollsRemaining} left)`}
+            ${this.state.rollsRemaining === 3 ? '🎲 Roll dice' : `🎲 Roll again (${this.state.rollsRemaining} left)`}
           </button>
           
           ${needsAnnouncement && canAnnounce && this.state.rollsRemaining === 2 ? `
