@@ -3798,9 +3798,20 @@ export class OnlineGameManager {
       await this.subscribeToGameUpdates();
 
       // Fetch and restore game state FIRST before showing UI
+      debugLog("🔄 Fetching game states from server...");
       const states = await getAllGameStates(gameId);
+      debugLog("✅ Game states fetched:", states.length, "players");
       const myState = states.find((s) => s.player_id === playerId);
       const currentPlayerState = states.find((s) => s.player_id === this.currentTurnPlayerId);
+
+      if (myState) {
+        debugLog("📊 My state from server:", {
+          dice_values: myState.dice_values,
+          dice_locked: myState.dice_locked,
+          rolls_remaining: myState.rolls_remaining,
+          scorecard: myState.scorecard,
+        });
+      }
 
       if (this.usingVirtualDice) {
         // Build the correct dice state from server data
@@ -3823,8 +3834,10 @@ export class OnlineGameManager {
         let initialDiceState = null;
         if (this.isMyTurn && myState) {
           initialDiceState = buildDiceStateFromServer(myState);
+          debugLog("🎲 Building initial dice state (my turn):", initialDiceState);
         } else if (!this.isMyTurn && currentPlayerState) {
           initialDiceState = buildDiceStateFromServer(currentPlayerState);
+          debugLog("🎲 Building initial dice state (opponent turn):", initialDiceState);
         }
 
         // Build game state for virtualDiceUI
@@ -3835,6 +3848,7 @@ export class OnlineGameManager {
           }
         );
 
+        debugLog("🎮 Showing virtual dice panel with initial state...");
         // Show panel with the correct initial state
         this.gameModeManager.showVirtualDicePanel({
           preserveState: !!this.gameModeManager.virtualDiceUI,
@@ -3847,9 +3861,11 @@ export class OnlineGameManager {
         // If virtualDiceUI was just created, set the dice state now
         const virtualDiceUI = this.gameModeManager.virtualDiceUI;
         if (virtualDiceUI && initialDiceState) {
+          debugLog("🎲 Setting virtualDiceUI.state after panel shown:", initialDiceState);
           virtualDiceUI.state = initialDiceState;
         }
 
+        debugLog("🔗 Setting up virtual dice callbacks...");
         this.setupVirtualDiceCallbacks();
       } else {
         this.gameModeManager.hideVirtualDicePanel();
