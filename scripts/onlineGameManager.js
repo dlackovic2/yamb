@@ -31,7 +31,7 @@ import {
 } from "./scoring.js";
 import { GameMode } from "./gameMode.js";
 
-globalThis.__YAMB_DEBUG = false;
+globalThis.__YAMB_DEBUG = true;
 const TOTAL_INPUT_CELLS = columns.length * categories.filter((category) => category.input).length;
 const DEBUG_LOGS_ENABLED = Boolean(globalThis?.__YAMB_DEBUG ?? import.meta?.env?.DEV ?? false);
 const debugLog = (...args) => {
