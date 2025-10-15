@@ -436,7 +436,11 @@ export class GameModeManager {
    * Show virtual dice panel in the main view
    */
   showVirtualDicePanel(options = {}) {
-    const { preserveState = false, initialStateOverride = null } = options || {};
+    const {
+      preserveState = false,
+      initialStateOverride = null,
+      initialDiceState = null,
+    } = options || {};
     // Create or show the virtual dice panel in the layout
     let panel = document.getElementById("virtual-dice-main-panel");
 
@@ -475,6 +479,11 @@ export class GameModeManager {
       this.virtualDiceUI.setAnnounceCallback(() => {
         this.handleVirtualAnnouncement();
       });
+
+      // If initialDiceState was provided, set it immediately after creation
+      if (initialDiceState) {
+        this.virtualDiceUI.state = initialDiceState;
+      }
     }
 
     // Start with a fresh turn (default to free column, no scores yet)

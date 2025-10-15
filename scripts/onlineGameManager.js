@@ -3803,33 +3803,53 @@ export class OnlineGameManager {
       const currentPlayerState = states.find((s) => s.player_id === this.currentTurnPlayerId);
 
       if (this.usingVirtualDice) {
-        // Pre-load dice state into virtualDiceUI BEFORE showing panel
-        const virtualDiceUI = this.gameModeManager.virtualDiceUI;
-        if (virtualDiceUI && myState) {
-          const buildDiceStateFromServer = (state) => {
-            const base = createDiceState();
-            if (!state) return base;
-            if (Array.isArray(state.dice_values) && state.dice_values.length === 5) {
-              base.values = state.dice_values;
-            }
-            if (Array.isArray(state.dice_locked) && state.dice_locked.length === 5) {
-              base.locked = state.dice_locked;
-            }
-            if (typeof state.rolls_remaining === "number") {
-              base.rollsRemaining = state.rolls_remaining;
-            }
-            return base;
-          };
-
-          if (this.isMyTurn) {
-            virtualDiceUI.state = buildDiceStateFromServer(myState);
-          } else if (currentPlayerState) {
-            virtualDiceUI.state = buildDiceStateFromServer(currentPlayerState);
+        // Build the correct dice state from server data
+        const buildDiceStateFromServer = (state) => {
+          const base = createDiceState();
+          if (!state) return base;
+          if (Array.isArray(state.dice_values) && state.dice_values.length === 5) {
+            base.values = state.dice_values;
           }
+          if (Array.isArray(state.dice_locked) && state.dice_locked.length === 5) {
+            base.locked = state.dice_locked;
+          }
+          if (typeof state.rolls_remaining === "number") {
+            base.rollsRemaining = state.rolls_remaining;
+          }
+          return base;
+        };
+
+        // Determine which state to use for initial dice display
+        let initialDiceState = null;
+        if (this.isMyTurn && myState) {
+          initialDiceState = buildDiceStateFromServer(myState);
+        } else if (!this.isMyTurn && currentPlayerState) {
+          initialDiceState = buildDiceStateFromServer(currentPlayerState);
         }
 
-        this.gameModeManager.showVirtualDicePanel({ preserveState: true });
+        // Build game state for virtualDiceUI
+        const gameStateForUI = this.buildVirtualDiceGameStateFromScorecard(
+          myState?.scorecard || {},
+          {
+            announcement: this.getPlayerAnnouncement(this.playerId),
+          }
+        );
+
+        // Show panel with the correct initial state
+        this.gameModeManager.showVirtualDicePanel({
+          preserveState: !!this.gameModeManager.virtualDiceUI,
+          initialStateOverride: gameStateForUI,
+          initialDiceState: initialDiceState,
+        });
+
         await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // If virtualDiceUI was just created, set the dice state now
+        const virtualDiceUI = this.gameModeManager.virtualDiceUI;
+        if (virtualDiceUI && initialDiceState) {
+          virtualDiceUI.state = initialDiceState;
+        }
+
         this.setupVirtualDiceCallbacks();
       } else {
         this.gameModeManager.hideVirtualDicePanel();
