@@ -1694,8 +1694,8 @@ export class OnlineGameManager {
         await this.recoverAfterReconnect({ silent: true });
       }
 
-  this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
-  this.showNotification("✅ Connection restored.", "success");
+      this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
+      this.showNotification("✅ Connection restored.", "success");
     } catch (error) {
       console.error("Reconnect attempt failed.", error);
       if (isManual) {
@@ -3555,7 +3555,7 @@ export class OnlineGameManager {
     this.realtimeStatusChangedAt = 0;
     this.lastRealtimeWarningAt = 0;
     this.recoveringAfterReconnect = false;
-  this.staleRealtimeSubscriptionIds.clear();
+    this.staleRealtimeSubscriptionIds.clear();
     this.stopReconnectLoop();
     this.localConnectionStatus = "connected";
     for (const timer of this.pendingDisconnectNotices.values()) {
