@@ -435,7 +435,8 @@ export class GameModeManager {
   /**
    * Show virtual dice panel in the main view
    */
-  showVirtualDicePanel() {
+  showVirtualDicePanel(options = {}) {
+    const { preserveState = false, initialStateOverride = null } = options || {};
     // Create or show the virtual dice panel in the layout
     let panel = document.getElementById("virtual-dice-main-panel");
 
@@ -478,13 +479,22 @@ export class GameModeManager {
 
     // Start with a fresh turn (default to free column, no scores yet)
     if (this.virtualDiceUI) {
-      const initialState = {
-        currentColumn: "free",
-        scores: this.getCurrentScores(), // Get current scores from scorecard
-        announcement: null,
-      };
-      this.virtualDiceUI.startTurn(initialState);
-      // First roll should be manual - user clicks the roll button
+      if (preserveState) {
+        if (initialStateOverride) {
+          this.virtualDiceUI.setGameState(initialStateOverride);
+          this.virtualDiceUI.updatePossibleScores("showVirtualDicePanel:preserveOverride");
+        } else {
+          this.virtualDiceUI.updatePossibleScores("showVirtualDicePanel:preserve");
+        }
+      } else {
+        const initialState = initialStateOverride || {
+          currentColumn: "free",
+          scores: this.getCurrentScores(), // Get current scores from scorecard
+          announcement: null,
+        };
+        this.virtualDiceUI.startTurn(initialState);
+        // First roll should be manual - user clicks the roll button
+      }
     }
   }
 

@@ -3798,7 +3798,7 @@ export class OnlineGameManager {
       await this.subscribeToGameUpdates();
 
       if (this.usingVirtualDice) {
-        this.gameModeManager.showVirtualDicePanel();
+        this.gameModeManager.showVirtualDicePanel({ preserveState: true });
         await new Promise((resolve) => setTimeout(resolve, 0));
         this.setupVirtualDiceCallbacks();
       } else {
