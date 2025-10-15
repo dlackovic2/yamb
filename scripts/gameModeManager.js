@@ -440,7 +440,10 @@ export class GameModeManager {
       preserveState = false,
       initialStateOverride = null,
       initialDiceState = null,
+      forceControlsEnabled,
     } = options || {};
+
+    const hasExplicitControls = typeof forceControlsEnabled === "boolean";
 
     console.log("🎮 showVirtualDicePanel called with options:", {
       preserveState,
@@ -521,6 +524,16 @@ export class GameModeManager {
         };
         this.virtualDiceUI.startTurn(initialState);
         // First roll should be manual - user clicks the roll button
+      }
+
+      const shouldEnableControls = hasExplicitControls
+        ? forceControlsEnabled
+        : !this.isOnlineMode();
+
+      if (shouldEnableControls) {
+        this.virtualDiceUI.setControlsEnabled(true);
+      } else if (hasExplicitControls) {
+        this.virtualDiceUI.setControlsEnabled(forceControlsEnabled);
       }
     }
   }

@@ -825,12 +825,12 @@ export class VirtualDiceUI {
 
     const html = `
       <div class="scores-header">
-        <h3>Available Scores:</h3>
+        <h3>Available scores:</h3>
         <div class="scores-controls">
           <button class="btn-sort btn-sort-${
             this.sortBy
           }" data-action="toggle-sort" title="Change sort order">
-            ${this.sortBy === "value" ? "🔽 By Value" : "📋 By Scorecard"}
+            ${this.sortBy === "value" ? "🔽 By value" : "📋 By scorecard"}
           </button>
           ${
             hasZeroOptions
@@ -838,7 +838,7 @@ export class VirtualDiceUI {
             <button class="btn-toggle-zeros ${
               this.showZeroOptions ? "active" : ""
             }" data-action="toggle-zeros" title="Show/hide zero scores">
-              ${this.showZeroOptions ? "👁️ Hide Zeros" : "👁️ Show All"}
+              ${this.showZeroOptions ? "👁️ Hide zeros" : "👁️ Show all"}
             </button>
           `
               : ""
