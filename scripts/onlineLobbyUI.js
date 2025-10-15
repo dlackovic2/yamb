@@ -57,7 +57,7 @@ export class OnlineLobbyUI {
       <dialog id="online-lobby-dialog" class="app-dialog online-lobby-dialog">
         <button class="dialog-close-btn" id="lobby-close-btn" aria-label="Close">×</button>
         <div class="dialog-content">
-          <h2 class="dialog-title">🌐 Online Multiplayer</h2>
+          <h2 class="dialog-title">🌐 Online multiplayer</h2>
           
           <!-- Initial Choice: Create or Join -->
           <div id="lobby-choice" class="lobby-section">
@@ -65,11 +65,11 @@ export class OnlineLobbyUI {
             <div class="lobby-buttons">
               <button id="btn-create-game" class="btn btn-primary btn-large">
                 <span class="btn-icon">➕</span>
-                Create New Game
+                Create new game
               </button>
               <button id="btn-join-game" class="btn btn-secondary btn-large">
                 <span class="btn-icon">🔗</span>
-                Join Game
+                Join game
               </button>
             </div>
           </div>
@@ -77,10 +77,10 @@ export class OnlineLobbyUI {
           <!-- Create Game Form -->
           <div id="lobby-create" class="lobby-section" style="display: none;">
             <button class="btn-back" id="btn-back-from-create">← Back</button>
-            <h3>Create New Game</h3>
+            <h3>Create new game</h3>
             <form id="form-create-game">
               <div class="form-group">
-                <label for="input-host-name">Your Name</label>
+                <label for="input-host-name">Your name</label>
                 <input 
                   type="text" 
                   id="input-host-name" 
@@ -91,7 +91,7 @@ export class OnlineLobbyUI {
                 />
               </div>
               <button type="submit" class="btn btn-primary btn-large">
-                Create Game Room
+                Create game room
               </button>
             </form>
           </div>
@@ -102,7 +102,7 @@ export class OnlineLobbyUI {
             <h3>Join Game</h3>
             <form id="form-join-game">
               <div class="form-group">
-                <label for="input-player-name">Your Name</label>
+                <label for="input-player-name">Your name</label>
                 <input 
                   type="text" 
                   id="input-player-name" 
@@ -113,7 +113,7 @@ export class OnlineLobbyUI {
                 />
               </div>
               <div class="form-group">
-                <label for="input-room-code">Room Code</label>
+                <label for="input-room-code">Room code</label>
                 <input 
                   type="text" 
                   id="input-room-code" 
@@ -130,12 +130,12 @@ export class OnlineLobbyUI {
             <div id="join-error" class="error-message" style="display: none;"></div>
           </div>
           
-          <!-- Waiting Room -->
+          <!-- Waiting room -->
           <div id="lobby-waiting" class="lobby-section" style="display: none;">
-            <h3>Waiting Room</h3>
+            <h3>Waiting room</h3>
             
             <div class="room-code-display">
-              <div class="room-code-label">Room Code:</div>
+              <div class="room-code-label">Room code:</div>
               <div class="room-code-value" id="display-room-code">------</div>
               <button class="btn btn-small" id="btn-copy-code">
                 📋 Copy
@@ -149,10 +149,10 @@ export class OnlineLobbyUI {
             
             <div class="waiting-actions">
               <button class="btn btn-primary btn-large" id="btn-start-game" style="display: none;">
-                Start Game
+                Start game
               </button>
               <button class="btn btn-secondary" id="btn-leave-game">
-                Leave Game
+                Leave game
               </button>
             </div>
             
@@ -753,7 +753,9 @@ export class OnlineLobbyUI {
       <div class="player-item ${player.is_host ? "player-host" : ""}">
         <span class="player-name">${player.player_name}</span>
         ${player.is_host ? '<span class="player-badge">Host</span>' : ""}
-        <span class="player-status ${player.connection_status === "connected" ? "status-connected" : "status-disconnected"}">
+        <span class="player-status ${
+          player.connection_status === "connected" ? "status-connected" : "status-disconnected"
+        }">
           ${player.connection_status === "connected" ? "🟢" : "🔴"}
         </span>
       </div>

@@ -445,6 +445,7 @@ export class GameModeManager {
 
     const hasExplicitControls = typeof forceControlsEnabled === "boolean";
 
+    /*
     console.log("🎮 showVirtualDicePanel called with options:", {
       preserveState,
       hasInitialStateOverride: !!initialStateOverride,
@@ -452,6 +453,7 @@ export class GameModeManager {
       initialDiceState,
       virtualDiceUIExists: !!this.virtualDiceUI,
     });
+    */
 
     // Create or show the virtual dice panel in the layout
     let panel = document.getElementById("virtual-dice-main-panel");
@@ -484,7 +486,7 @@ export class GameModeManager {
     // Initialize virtual dice UI in the panel if not already done
     const container = document.getElementById("virtual-dice-main-container");
     if (container && !this.virtualDiceUI) {
-      console.log("🆕 Creating new VirtualDiceUI instance");
+      //console.log("🆕 Creating new VirtualDiceUI instance");
       this.virtualDiceUI = new VirtualDiceUI(container, (category, column, diceValues) =>
         this.handleMainPanelScoreSelect(category, column, diceValues)
       );
@@ -495,16 +497,8 @@ export class GameModeManager {
 
       // If initialDiceState was provided, set it immediately after creation
       if (initialDiceState) {
-        console.log(
-          "🎲 Setting initialDiceState on newly created VirtualDiceUI:",
-          initialDiceState
-        );
         this.virtualDiceUI.state = initialDiceState;
-      } else {
-        console.log("⚠️ No initialDiceState provided, VirtualDiceUI will have default state");
       }
-    } else if (this.virtualDiceUI) {
-      console.log("♻️ VirtualDiceUI already exists, current state:", this.virtualDiceUI.state);
     }
 
     // Start with a fresh turn (default to free column, no scores yet)
