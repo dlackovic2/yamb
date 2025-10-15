@@ -3756,10 +3756,9 @@ export class OnlineGameManager {
       debugLog("🔄 Rejoining game...", { gameId, playerId, silent });
 
       const game = await getGame(gameId);
-      if (game?.game_mode && this.gameModeManager?.applyOnlineGameMode) {
-        this.gameModeManager.applyOnlineGameMode(game.game_mode);
-      }
 
+      // Don't apply game mode during rejoin - it will trigger early UI updates
+      // Instead, just update the dice mode setting
       const modeFromServer = game?.game_mode?.dice;
       const localMode = this.gameModeManager?.getMode ? this.gameModeManager.getMode() : null;
       const diceMode = modeFromServer ?? localMode?.dice ?? GameMode.DICE.VIRTUAL;
