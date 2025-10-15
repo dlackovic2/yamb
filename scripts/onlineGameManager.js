@@ -3793,12 +3793,10 @@ export class OnlineGameManager {
       const me = game.players.find((p) => p.id === playerId);
       this.isHost = me?.is_host || false;
 
-      // Subscribe to updates
-      await this.subscribeToGameUpdates();
-
-      // Fetch and restore game state FIRST before showing UI
+      // Fetch game states and subscribe to updates IN PARALLEL for faster reconnect
       debugLog("🔄 Fetching game states from server...");
-      const states = await getAllGameStates(gameId);
+      const [states] = await Promise.all([getAllGameStates(gameId), this.subscribeToGameUpdates()]);
+
       debugLog("✅ Game states fetched:", states.length, "players");
       const myState = states.find((s) => s.player_id === playerId);
       const currentPlayerState = states.find((s) => s.player_id === this.currentTurnPlayerId);
