@@ -565,7 +565,7 @@ export class VirtualDiceUI {
       }
 
       const attrString = attrs.length ? ` ${attrs.join(" ")}` : "";
-      return `<button class="btn-announce"${attrString}>📢 Announce Category</button>`;
+      return `<button class="btn-announce"${attrString}>📢 Announce category</button>`;
     };
 
     const canAnnounce = baseAnnounceWindowOpen && !this.announced;

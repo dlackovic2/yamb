@@ -91,6 +91,7 @@ export class OnlineGameManager {
     this.realtimeWarningCooldownMs = 12000;
     this.lastRealtimeWarningAt = 0;
     this.recoveringAfterReconnect = false;
+    this.staleRealtimeSubscriptionIds = new Set();
     this.realtimeResubscribeTimer = null;
     this.realtimeResubscribeAttempts = 0;
     this.realtimeMaxResubscribeAttempts = 5;
@@ -324,8 +325,13 @@ export class OnlineGameManager {
     const { skipAttemptReset = false } = options;
 
     if (this.unsubscribe) {
+      const previousUnsubscribe = this.unsubscribe;
+      const previousSubscriptionId = previousUnsubscribe?.subscriptionId ?? null;
+      if (previousSubscriptionId) {
+        this.staleRealtimeSubscriptionIds.add(previousSubscriptionId);
+      }
       try {
-        await this.unsubscribe();
+        await previousUnsubscribe();
       } catch (error) {
         console.warn("Failed to unsubscribe existing game channel before resubscribing:", error);
       }
@@ -367,7 +373,11 @@ export class OnlineGameManager {
       onStatusChange: (status, info) => this.handleRealtimeStatusChange(status, info),
     });
 
-    this.activeRealtimeSubscriptionId = unsubscribe?.subscriptionId ?? null;
+    const newSubscriptionId = unsubscribe?.subscriptionId ?? null;
+    if (newSubscriptionId) {
+      this.staleRealtimeSubscriptionIds.delete(newSubscriptionId);
+    }
+    this.activeRealtimeSubscriptionId = newSubscriptionId;
     this.unsubscribe = unsubscribe;
   }
 
@@ -1153,6 +1163,15 @@ export class OnlineGameManager {
     const now = Date.now();
 
     const subscriptionId = meta?.subscriptionId ?? null;
+    if (subscriptionId && this.staleRealtimeSubscriptionIds.has(subscriptionId)) {
+      this.logRealtimeEvent("channel-status-ignored", {
+        status: normalized,
+        subscriptionId,
+        channelTopic: meta?.channelTopic ?? null,
+        reason: "stale",
+      });
+      return;
+    }
     if (
       subscriptionId &&
       this.activeRealtimeSubscriptionId &&
@@ -1187,7 +1206,11 @@ export class OnlineGameManager {
       }
 
       if (this.localConnectionStatus === "disconnected") {
-        this.setLocalConnectionStatus("connected", { startReconnect: false });
+        this.setLocalConnectionStatus("connected", {
+          startReconnect: false,
+          toast: false,
+          suppressPresenceUpdate: true,
+        });
       }
 
       this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
@@ -1493,7 +1516,12 @@ export class OnlineGameManager {
 
   setLocalConnectionStatus(status, options = {}) {
     const normalized = status === "disconnected" ? "disconnected" : "connected";
-    const { startReconnect = true, force = false } = options;
+    const {
+      startReconnect = true,
+      force = false,
+      toast = true,
+      suppressPresenceUpdate = false,
+    } = options;
 
     if (!force && this.localConnectionStatus === normalized) {
       if (normalized === "disconnected" && startReconnect) {
@@ -1507,6 +1535,8 @@ export class OnlineGameManager {
       to: normalized,
       startReconnect,
       force,
+      toast,
+      suppressPresenceUpdate,
     });
 
     this.localConnectionStatus = normalized;
@@ -1524,7 +1554,9 @@ export class OnlineGameManager {
       if (startReconnect) {
         this.scheduleNextReconnectAttempt(this.reconnectAttemptIntervalMs);
       }
-      this.showToast("Internet connection lost. Reconnect to keep playing.", "warning");
+      if (toast) {
+        this.showToast("Internet connection lost. Reconnect to keep playing.", "warning");
+      }
     } else {
       this.stopReconnectLoop();
       this.reconnectAttemptInFlight = false;
@@ -1537,7 +1569,7 @@ export class OnlineGameManager {
       this.updateTurnIndicator();
     }
 
-    if (this.gameId) {
+    if (this.gameId && !suppressPresenceUpdate) {
       this.updateOnlineStatusBanner();
     }
   }
@@ -1647,7 +1679,11 @@ export class OnlineGameManager {
 
     try {
       await updatePlayerConnectionStatus(this.gameId, this.playerId, "connected");
-      this.setLocalConnectionStatus("connected", { startReconnect: false, force: true });
+      this.setLocalConnectionStatus("connected", {
+        startReconnect: false,
+        force: true,
+        suppressPresenceUpdate: true,
+      });
 
       let needsRecovery = !this.isRealtimeLinkHealthy() || !this.unsubscribe;
       if (!needsRecovery && typeof options.forceRecovery === "boolean") {
@@ -1658,8 +1694,8 @@ export class OnlineGameManager {
         await this.recoverAfterReconnect({ silent: true });
       }
 
-      this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
-      this.showNotification("✅ Connection restored.", "success");
+  this.queuePresenceStatusUpdate(this.buildConnectedIdSet());
+  this.showNotification("✅ Connection restored.", "success");
     } catch (error) {
       console.error("Reconnect attempt failed.", error);
       if (isManual) {
@@ -3519,6 +3555,7 @@ export class OnlineGameManager {
     this.realtimeStatusChangedAt = 0;
     this.lastRealtimeWarningAt = 0;
     this.recoveringAfterReconnect = false;
+  this.staleRealtimeSubscriptionIds.clear();
     this.stopReconnectLoop();
     this.localConnectionStatus = "connected";
     for (const timer of this.pendingDisconnectNotices.values()) {
