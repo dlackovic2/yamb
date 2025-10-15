@@ -2012,18 +2012,24 @@ export class OnlineGameManager {
   /**
    * Update turn state (am I the current player?)
    */
-  updateTurnState() {
+  updateTurnState(options = {}) {
+    const { silent = false, skipDiceReset = false } = options || {};
+
     const wasMyTurn = this.isMyTurn;
     this.isMyTurn = this.currentTurnPlayerId === this.playerId;
-    debugLog(`🎯 ${this.isMyTurn ? "Your turn!" : "Opponent's turn"}`);
+    if (!silent) {
+      debugLog(`🎯 ${this.isMyTurn ? "Your turn!" : "Opponent's turn"}`);
+    }
 
     if (!wasMyTurn && this.isMyTurn) {
       this.turnChangePending = false;
-      this.playTurnNotificationSound();
+      if (!silent) {
+        this.playTurnNotificationSound();
+      }
     }
 
     // When my turn ends, reset local dice to neutral state
-    if (this.usingVirtualDice && wasMyTurn && !this.isMyTurn) {
+    if (!skipDiceReset && this.usingVirtualDice && wasMyTurn && !this.isMyTurn) {
       debugLog("🔄 Turn passed to opponent - showing default dice");
       const virtualDiceUI = this.gameModeManager.virtualDiceUI;
       if (virtualDiceUI) {
@@ -2041,7 +2047,7 @@ export class OnlineGameManager {
     }
 
     // When it becomes your turn, reset dice to fresh state
-    if (this.usingVirtualDice && !wasMyTurn && this.isMyTurn) {
+    if (!skipDiceReset && this.usingVirtualDice && !wasMyTurn && this.isMyTurn) {
       debugLog("🔄 Turn changed to me - resetting dice");
       const virtualDiceUI = this.gameModeManager.virtualDiceUI;
       if (virtualDiceUI) {
@@ -3766,6 +3772,7 @@ export class OnlineGameManager {
       this.currentTurnPlayerId = game.current_turn_player_id;
       this.currentViewPlayerId = playerId;
       this.turnChangePending = false;
+      this.isMyTurn = this.currentTurnPlayerId === this.playerId;
       this.refreshPlayerStatusCache(this.players);
       const rejoinNow = Date.now();
       this.presenceWarmupUntil = rejoinNow + this.presenceWarmupMs;
@@ -3784,8 +3791,6 @@ export class OnlineGameManager {
 
       const me = game.players.find((p) => p.id === playerId);
       this.isHost = me?.is_host || false;
-
-      this.updateTurnState();
 
       // Subscribe to updates
       await this.subscribeToGameUpdates();
@@ -3871,6 +3876,8 @@ export class OnlineGameManager {
       }
 
       debugLog("✅ Game state restored");
+
+      this.updateTurnState({ silent: true, skipDiceReset: true });
 
       this.updateUI("rejoinGame:success");
       if (!silent) {
