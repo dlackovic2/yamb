@@ -3797,7 +3797,37 @@ export class OnlineGameManager {
       // Subscribe to updates
       await this.subscribeToGameUpdates();
 
+      // Fetch and restore game state FIRST before showing UI
+      const states = await getAllGameStates(gameId);
+      const myState = states.find((s) => s.player_id === playerId);
+      const currentPlayerState = states.find((s) => s.player_id === this.currentTurnPlayerId);
+
       if (this.usingVirtualDice) {
+        // Pre-load dice state into virtualDiceUI BEFORE showing panel
+        const virtualDiceUI = this.gameModeManager.virtualDiceUI;
+        if (virtualDiceUI && myState) {
+          const buildDiceStateFromServer = (state) => {
+            const base = createDiceState();
+            if (!state) return base;
+            if (Array.isArray(state.dice_values) && state.dice_values.length === 5) {
+              base.values = state.dice_values;
+            }
+            if (Array.isArray(state.dice_locked) && state.dice_locked.length === 5) {
+              base.locked = state.dice_locked;
+            }
+            if (typeof state.rolls_remaining === "number") {
+              base.rollsRemaining = state.rolls_remaining;
+            }
+            return base;
+          };
+
+          if (this.isMyTurn) {
+            virtualDiceUI.state = buildDiceStateFromServer(myState);
+          } else if (currentPlayerState) {
+            virtualDiceUI.state = buildDiceStateFromServer(currentPlayerState);
+          }
+        }
+
         this.gameModeManager.showVirtualDicePanel({ preserveState: true });
         await new Promise((resolve) => setTimeout(resolve, 0));
         this.setupVirtualDiceCallbacks();
@@ -3806,10 +3836,6 @@ export class OnlineGameManager {
         this.gameModeManager.enableScorecardInputs();
       }
 
-      // Fetch and restore game state
-      const states = await getAllGameStates(gameId);
-      const myState = states.find((s) => s.player_id === playerId);
-      const currentPlayerState = states.find((s) => s.player_id === this.currentTurnPlayerId);
       const virtualDiceUI = this.gameModeManager.virtualDiceUI;
 
       const hydration = this.hydrateAnnouncementsFromStates(states);
