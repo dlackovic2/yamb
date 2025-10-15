@@ -397,10 +397,12 @@ export class OnlineGameManager {
 
     debugLog("🔗 Setting up virtual dice callbacks...");
 
-    // CRITICAL: Ensure state has history property before doing anything
-    if (!virtualDiceUI.state.history) {
-      console.warn("⚠️ State missing history property, fixing...");
+    // Ensure the current state survives without wiping in-flight dice values
+    if (!virtualDiceUI.state || typeof virtualDiceUI.state !== "object") {
+      console.warn("⚠️ Virtual dice state missing, creating default state");
       virtualDiceUI.state = createDiceState();
+    } else if (!Array.isArray(virtualDiceUI.state.history)) {
+      virtualDiceUI.state.history = [];
     }
 
     // Store original methods (once) for restoration
