@@ -31,7 +31,7 @@ import {
 } from "./scoring.js";
 import { GameMode } from "./gameMode.js";
 
-globalThis.__YAMB_DEBUG = true;
+globalThis.__YAMB_DEBUG = false;
 const TOTAL_INPUT_CELLS = columns.length * categories.filter((category) => category.input).length;
 const DEBUG_LOGS_ENABLED = Boolean(globalThis?.__YAMB_DEBUG ?? import.meta?.env?.DEV ?? false);
 const debugLog = (...args) => {
@@ -3003,6 +3003,11 @@ export class OnlineGameManager {
       const diceElements = virtualDiceUI.container?.querySelectorAll(".die");
 
       if (diceElements && diceElements.length) {
+        // Force a reflow to ensure animations trigger on mobile
+        diceElements.forEach((die) => {
+          void die.offsetHeight;
+        });
+
         diceElements.forEach((die, index) => {
           const isLocked = Boolean(nextLocked[index]);
           if (isLocked) {

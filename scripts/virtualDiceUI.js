@@ -599,21 +599,6 @@ export class VirtualDiceUI {
             ${buildAnnounceButton()}
           </div>
         `
-            : announceActionEnabled
-            ? `
-          <div class="announce-prompt">
-            ${buildAnnounceButton()}
-          </div>
-        `
-            : !this.announced && hasAnnouncementOptions && hasRolled
-            ? `
-          <div class="announce-prompt">
-            ${buildAnnounceButton({
-              forceDisabled: true,
-              title: "Can only announce before or after first roll",
-            })}
-          </div>
-        `
             : needsAnnouncement && this.announced
             ? `
           <div class="announce-prompt announce-required">
@@ -622,7 +607,22 @@ export class VirtualDiceUI {
             )} in the announce column to finish the turn.</p>
           </div>
         `
-            : ""
+            : `
+          <div class="announce-prompt">
+            ${buildAnnounceButton({
+              forceDisabled: !announceActionEnabled,
+              title: !hasAnnouncementOptions
+                ? "No categories left to announce"
+                : this.announced
+                ? "You already announced this turn"
+                : !baseAnnounceWindowOpen
+                ? "You can only announce before or right after your first roll"
+                : controlsDisabled
+                ? "Announcements are disabled right now"
+                : "",
+            })}
+          </div>
+        `
         }
         
         <div class="dice-display">
