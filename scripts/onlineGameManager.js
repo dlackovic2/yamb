@@ -31,7 +31,7 @@ import {
 } from "./scoring.js";
 import { GameMode } from "./gameMode.js";
 
-globalThis.__YAMB_DEBUG = false;
+globalThis.__YAMB_DEBUG = true;
 const TOTAL_INPUT_CELLS = columns.length * categories.filter((category) => category.input).length;
 const DEBUG_LOGS_ENABLED = Boolean(globalThis?.__YAMB_DEBUG ?? import.meta?.env?.DEV ?? false);
 const debugLog = (...args) => {
@@ -1900,12 +1900,34 @@ export class OnlineGameManager {
           lastRollsRaw === undefined ? undefined : this.normalizeRollsRemaining(lastRollsRaw);
         const currentRolls = this.normalizeRollsRemaining(payload.new.rolls_remaining);
         const rolledFromStart = currentRolls !== null && currentRolls < 3;
-        const actuallyRolled =
+        let actuallyRolled =
           currentRolls !== null
             ? lastRolls === undefined || lastRolls === null
               ? rolledFromStart
               : currentRolls < lastRolls
             : false;
+
+        if (!actuallyRolled) {
+          const virtualDiceUI = this.gameModeManager?.virtualDiceUI;
+          const previousValues = Array.isArray(virtualDiceUI?.state?.values)
+            ? [...virtualDiceUI.state.values]
+            : null;
+          const nextValues = Array.isArray(payload.new.dice_values)
+            ? [...payload.new.dice_values]
+            : null;
+          if (previousValues && nextValues) {
+            const diceValuesChanged = nextValues.some((value, index) => {
+              return previousValues[index] !== value;
+            });
+            if (diceValuesChanged) {
+              debugLog("🎲 Dice action detected via value change", {
+                previousValues,
+                nextValues,
+              });
+              actuallyRolled = true;
+            }
+          }
+        }
 
         debugLog("🎲 Dice action detected:", {
           lastRolls,
