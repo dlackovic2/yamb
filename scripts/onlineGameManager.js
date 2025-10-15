@@ -876,7 +876,7 @@ export class OnlineGameManager {
             const restoredState = createDiceState();
             restoredState.values = myState.dice_values;
             restoredState.locked = myState.dice_locked || [false, false, false, false, false];
-            restoredState.rollsRemaining = myState.rolls_remaining ?? 3;
+            restoredState.rollsRemaining = this.normalizeRollsRemaining(myState.rolls_remaining, 3);
             virtualDiceUI.render();
             virtualDiceUI.updatePossibleScores("restoreGameState:myTurn");
             debugLog("🎲 Restored my dice state:", restoredState);
@@ -1890,16 +1890,19 @@ export class OnlineGameManager {
       // Show notification based on action
       if (payload.new.last_action === "roll_dice") {
         // Check if rolls actually decreased (not just locking)
-        const lastRolls = Object.prototype.hasOwnProperty.call(this.lastOpponentRolls, opponentId)
+        const lastRollsRaw = Object.prototype.hasOwnProperty.call(
+          this.lastOpponentRolls,
+          opponentId
+        )
           ? this.lastOpponentRolls[opponentId]
           : undefined;
-        const currentRolls = Number.isInteger(payload.new.rolls_remaining)
-          ? payload.new.rolls_remaining
-          : null;
+        const lastRolls =
+          lastRollsRaw === undefined ? undefined : this.normalizeRollsRemaining(lastRollsRaw);
+        const currentRolls = this.normalizeRollsRemaining(payload.new.rolls_remaining);
         const rolledFromStart = currentRolls !== null && currentRolls < 3;
         const actuallyRolled =
           currentRolls !== null
-            ? lastRolls === undefined
+            ? lastRolls === undefined || lastRolls === null
               ? rolledFromStart
               : currentRolls < lastRolls
             : false;
@@ -1929,14 +1932,15 @@ export class OnlineGameManager {
         // Update virtualDiceUI with opponent's scorecard so it shows correct available options
         await this.updateVirtualDiceWithOpponentScorecard(opponentId, payload.new);
       } else if (payload.new.last_action === "lock_dice") {
-        this.lastOpponentRolls[opponentId] = payload.new.rolls_remaining;
+        const normalizedRolls = this.normalizeRollsRemaining(payload.new.rolls_remaining);
+        if (normalizedRolls !== null) {
+          this.lastOpponentRolls[opponentId] = normalizedRolls;
+        }
         this.updateVirtualDiceFromOpponent(payload.new, { cause: "lock" });
         await this.updateVirtualDiceWithOpponentScorecard(opponentId, payload.new);
         opponentScorecardUpdated = true;
       } else if (payload.new.last_action === "turn_started") {
-        const initialRolls = Number.isInteger(payload.new.rolls_remaining)
-          ? payload.new.rolls_remaining
-          : 3;
+        const initialRolls = this.normalizeRollsRemaining(payload.new.rolls_remaining, 3);
         this.lastOpponentRolls[opponentId] = initialRolls;
 
         // Update virtual dice UI to show fresh turn state (with announce button)
@@ -2874,6 +2878,21 @@ export class OnlineGameManager {
     }
   }
 
+  normalizeRollsRemaining(value, fallback = null) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return Math.max(0, Math.min(3, value));
+    }
+
+    if (typeof value === "string" && value.trim() !== "") {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isFinite(parsed)) {
+        return Math.max(0, Math.min(3, parsed));
+      }
+    }
+
+    return fallback;
+  }
+
   /**
    * Update virtual dice UI with opponent's dice state
    */
@@ -2922,9 +2941,7 @@ export class OnlineGameManager {
     const nextLocked = Array.isArray(opponentState.dice_locked)
       ? [...opponentState.dice_locked]
       : [false, false, false, false, false];
-    const nextRolls = Number.isInteger(opponentState.rolls_remaining)
-      ? opponentState.rolls_remaining
-      : 3;
+    const nextRolls = this.normalizeRollsRemaining(opponentState.rolls_remaining, 3);
 
     const applyState = () => {
       const newState = createDiceState();
@@ -3840,8 +3857,9 @@ export class OnlineGameManager {
           if (Array.isArray(state.dice_locked) && state.dice_locked.length === 5) {
             base.locked = state.dice_locked;
           }
-          if (typeof state.rolls_remaining === "number") {
-            base.rollsRemaining = state.rolls_remaining;
+          const normalizedRolls = this.normalizeRollsRemaining(state.rolls_remaining);
+          if (normalizedRolls !== null) {
+            base.rollsRemaining = normalizedRolls;
           }
           return base;
         };
@@ -3921,8 +3939,9 @@ export class OnlineGameManager {
           if (Array.isArray(state.dice_locked) && state.dice_locked.length === 5) {
             base.locked = state.dice_locked;
           }
-          if (typeof state.rolls_remaining === "number") {
-            base.rollsRemaining = state.rolls_remaining;
+          const normalizedRolls = this.normalizeRollsRemaining(state.rolls_remaining);
+          if (normalizedRolls !== null) {
+            base.rollsRemaining = normalizedRolls;
           }
           return base;
         };
@@ -3945,9 +3964,7 @@ export class OnlineGameManager {
           virtualDiceUI.setGameState(opponentGameState);
 
           // Initialize opponent roll tracking to enable animation detection
-          const opponentRolls = Number.isInteger(currentPlayerState.rolls_remaining)
-            ? currentPlayerState.rolls_remaining
-            : 3;
+          const opponentRolls = this.normalizeRollsRemaining(currentPlayerState.rolls_remaining, 3);
           this.lastOpponentRolls[this.currentTurnPlayerId] = opponentRolls;
 
           this.updateVirtualDiceFromOpponent(currentPlayerState, { cause: "rejoin" });
