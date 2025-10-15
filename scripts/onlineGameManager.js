@@ -1938,6 +1938,13 @@ export class OnlineGameManager {
           ? payload.new.rolls_remaining
           : 3;
         this.lastOpponentRolls[opponentId] = initialRolls;
+
+        // Update virtual dice UI to show fresh turn state (with announce button)
+        this.updateVirtualDiceFromOpponent(payload.new, {
+          animate: false,
+          cause: "turn_started",
+        });
+        await this.updateVirtualDiceWithOpponentScorecard(opponentId, payload.new);
       } else if (payload.new.last_action === "announce") {
         // Opponent announced a category - get details from recent action
         this.fetchRecentAction(opponentId, "announce").then((actionData) => {
@@ -3931,6 +3938,13 @@ export class OnlineGameManager {
             }
           );
           virtualDiceUI.setGameState(opponentGameState);
+
+          // Initialize opponent roll tracking to enable animation detection
+          const opponentRolls = Number.isInteger(currentPlayerState.rolls_remaining)
+            ? currentPlayerState.rolls_remaining
+            : 3;
+          this.lastOpponentRolls[this.currentTurnPlayerId] = opponentRolls;
+
           this.updateVirtualDiceFromOpponent(currentPlayerState, { cause: "rejoin" });
           await this.updateVirtualDiceWithOpponentScorecard(
             this.currentTurnPlayerId,
