@@ -752,6 +752,36 @@ if (gameModeManager.isVirtualMode()) {
   gameModeManager.disableScorecardInputs();
 }
 
+// Check for room code in URL parameters (invite link)
+function checkForInviteLink() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomCode = urlParams.get("room");
+
+  if (roomCode && roomCode.trim()) {
+    // Auto-open join flow with pre-filled room code
+    setTimeout(() => {
+      if (gameModeManager?.openJoinOnlineGame) {
+        gameModeManager.openJoinOnlineGame();
+        // Pre-fill the room code
+        setTimeout(() => {
+          const roomCodeInput = document.getElementById("input-room-code");
+          if (roomCodeInput) {
+            roomCodeInput.value = roomCode.toUpperCase();
+          }
+        }, 100);
+      }
+    }, 500);
+
+    // Clean up URL without reloading
+    if (window.history && window.history.replaceState) {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }
+}
+
+checkForInviteLink();
+
 /**
  * Setup the "Back to Virtual Dice" floating action button
  * Shows on mobile when scrolled past the virtual dice panel

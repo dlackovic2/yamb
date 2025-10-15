@@ -150,7 +150,7 @@ body
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  margin: clamp(0.5rem, 1vw, 0.75rem) clamp(1.25rem, 4vw, 3rem) 0;
+  margin: clamp(0.75rem, 1vw, 0.75rem) clamp(1.25rem, 4vw, 3rem) 0;
   padding: 0.75rem clamp(1rem, 2vw + 0.5rem, 1.5rem);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -2467,6 +2467,16 @@ input.score-input.score-highlight {
   letter-spacing: 0.4em;
   margin-bottom: 1rem;
   text-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+
+.room-code-display .btn {
+  margin: 0.25rem;
+  min-width: 100px;
+}
+
+.room-code-display .btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
 }
 
 .players-list {

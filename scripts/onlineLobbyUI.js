@@ -96,10 +96,10 @@ export class OnlineLobbyUI {
             </form>
           </div>
           
-          <!-- Join Game Form -->
+          <!-- Join game Form -->
           <div id="lobby-join" class="lobby-section" style="display: none;">
             <button class="btn-back" id="btn-back-from-join">← Back</button>
-            <h3>Join Game</h3>
+            <h3>Join game</h3>
             <form id="form-join-game">
               <div class="form-group">
                 <label for="input-player-name">Your name</label>
@@ -124,7 +124,7 @@ export class OnlineLobbyUI {
                 />
               </div>
               <button type="submit" class="btn btn-primary btn-large">
-                Join Game
+                Join game
               </button>
             </form>
             <div id="join-error" class="error-message" style="display: none;"></div>
@@ -139,6 +139,9 @@ export class OnlineLobbyUI {
               <div class="room-code-value" id="display-room-code">------</div>
               <button class="btn btn-small" id="btn-copy-code">
                 📋 Copy
+              </button>
+              <button class="btn btn-small" id="btn-share-invite">
+                📤 Share
               </button>
             </div>
             
@@ -216,6 +219,7 @@ export class OnlineLobbyUI {
 
     // Waiting room actions
     document.getElementById("btn-copy-code").addEventListener("click", () => this.copyRoomCode());
+    document.getElementById("btn-share-invite").addEventListener("click", () => this.shareInvite());
     document
       .getElementById("btn-start-game")
       .addEventListener("click", () => this.handleStartGame());
@@ -789,6 +793,59 @@ export class OnlineLobbyUI {
     } catch (error) {
       console.error("Failed to copy:", error);
       alert("Room code: " + this.currentRoomCode);
+    }
+  }
+
+  /**
+   * Share invite with room link
+   */
+  async shareInvite() {
+    if (!this.currentRoomCode) return;
+
+    try {
+      // Get the current game mode to show dice type
+      const mode = this.gameModeManager?.getMode?.();
+      const diceType = mode?.dice === "virtual" ? "virtual dice" : "physical dice";
+
+      // Build the invite URL with room code as query parameter
+      const baseUrl = window.location.origin + window.location.pathname;
+      const inviteUrl = `${baseUrl}?room=${this.currentRoomCode}`;
+
+      const inviteMessage = `Play Yamb with me! 🎲
+
+Mode: ${diceType}
+Room code: ${this.currentRoomCode}
+
+Join now: ${inviteUrl}`;
+
+      // Try to use Web Share API if available (mobile)
+      if (navigator.share) {
+        await navigator.share({
+          title: "Join my Yamb game!",
+          text: inviteMessage,
+        });
+        const btn = document.getElementById("btn-share-invite");
+        const originalText = btn.textContent;
+        btn.textContent = "✅ Shared!";
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(inviteMessage);
+        const btn = document.getElementById("btn-share-invite");
+        const originalText = btn.textContent;
+        btn.textContent = "✅ Copied!";
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Failed to share:", error);
+      // Fallback to alert
+      const baseUrl = window.location.origin + window.location.pathname;
+      const inviteUrl = `${baseUrl}?room=${this.currentRoomCode}`;
+      alert(`Share this link:\n${inviteUrl}\n\nRoom code: ${this.currentRoomCode}`);
     }
   }
 

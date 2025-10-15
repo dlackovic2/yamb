@@ -91,6 +91,7 @@ export class OnlineGameManager {
     this.realtimeWarningCooldownMs = 12000;
     this.lastRealtimeWarningAt = 0;
     this.recoveringAfterReconnect = false;
+    this.rejoiningGame = false;
     this.staleRealtimeSubscriptionIds = new Set();
     this.realtimeResubscribeTimer = null;
     this.realtimeResubscribeAttempts = 0;
@@ -1854,6 +1855,12 @@ export class OnlineGameManager {
       return;
     }
 
+    // Ignore state updates during rejoin to prevent overwriting restored state
+    if (this.rejoiningGame) {
+      debugLog("⏸️ Ignoring state update during rejoin:", payload);
+      return;
+    }
+
     const tableName = payload?.table || null;
     if (tableName && tableName !== "game_state") {
       debugLog("↩️ Ignoring non-state payload in handleStateUpdate", { tableName });
@@ -3590,6 +3597,7 @@ export class OnlineGameManager {
     }
     this.activeRealtimeSubscriptionId = null;
     this.channelReadyNotified = false;
+    this.rejoiningGame = false;
     this.logRealtimeEvent("cleanup-complete");
 
     this.gameId = null;
@@ -3805,6 +3813,9 @@ export class OnlineGameManager {
     const { silent = false, preserveStorage = false } = options || {};
     try {
       debugLog("🔄 Rejoining game...", { gameId, playerId, silent });
+
+      // Set flag to prevent state updates from overwriting our restored state
+      this.rejoiningGame = true;
 
       // Disable all controls during rejoin to prevent interaction with stale state
       let virtualDiceUI = this.gameModeManager?.virtualDiceUI;
@@ -4024,8 +4035,12 @@ export class OnlineGameManager {
       }
 
       debugLog("✅ Rejoined game successfully");
+
+      // Clear the rejoin flag to allow state updates again
+      this.rejoiningGame = false;
     } catch (error) {
       console.error("Failed to rejoin game:", error);
+      this.rejoiningGame = false; // Clear flag on error too
       if (!silent) {
         this.showNotification("Failed to reconnect: " + error.message, "error");
       }

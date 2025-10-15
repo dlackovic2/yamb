@@ -230,7 +230,7 @@ export class GameModeManager {
 
     // Initialize virtual dice if needed
     if (dice === GameMode.DICE.VIRTUAL) {
-      this.showVirtualDicePanel();
+      this.showVirtualDicePanel({ forceControlsEnabled: true });
       this.disableScorecardInputs();
     } else {
       this.hideVirtualDicePanel();
