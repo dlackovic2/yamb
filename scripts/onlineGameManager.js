@@ -3755,6 +3755,13 @@ export class OnlineGameManager {
     try {
       debugLog("🔄 Rejoining game...", { gameId, playerId, silent });
 
+      // Disable all controls during rejoin to prevent interaction with stale state
+      let virtualDiceUI = this.gameModeManager?.virtualDiceUI;
+      if (virtualDiceUI) {
+        virtualDiceUI.setControlsEnabled(false);
+      }
+      this.gameModeManager?.setOnlineManualInputEnabled(false);
+
       const game = await getGame(gameId);
 
       // Don't apply game mode during rejoin - it will trigger early UI updates
@@ -3869,7 +3876,8 @@ export class OnlineGameManager {
         this.gameModeManager.enableScorecardInputs();
       }
 
-      const virtualDiceUI = this.gameModeManager.virtualDiceUI;
+      // Re-reference virtualDiceUI after potential creation
+      virtualDiceUI = this.gameModeManager.virtualDiceUI;
 
       const hydration = this.hydrateAnnouncementsFromStates(states);
       if (!hydration.supported || hydration.missingPlayerIds.length) {
@@ -3912,7 +3920,7 @@ export class OnlineGameManager {
           virtualDiceUI.state = myDiceState;
           virtualDiceUI.render();
           virtualDiceUI.updatePossibleScores("rejoinGame:myTurn");
-          virtualDiceUI.setControlsEnabled(true);
+          // Don't enable controls yet - wait until full restoration
         } else if (currentPlayerState) {
           const pendingAnnouncement =
             this.getPlayerAnnouncement(currentPlayerState.player_id) ?? null;
@@ -3939,6 +3947,18 @@ export class OnlineGameManager {
       debugLog("✅ Game state restored");
 
       this.updateTurnState({ silent: true, skipDiceReset: true });
+
+      // Re-enable controls AFTER full restoration
+      if (this.usingVirtualDice) {
+        const finalVirtualDiceUI = this.gameModeManager?.virtualDiceUI;
+        if (finalVirtualDiceUI) {
+          const shouldEnable = this.isMyTurn && !this.turnChangePending;
+          finalVirtualDiceUI.setControlsEnabled(shouldEnable);
+          debugLog("🎮 Controls enabled:", shouldEnable, "(isMyTurn:", this.isMyTurn, ")");
+        }
+      } else {
+        this.applyTurnBasedInputLock();
+      }
 
       this.updateUI("rejoinGame:success");
       if (!silent) {
