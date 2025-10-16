@@ -787,14 +787,22 @@ export class OnlineLobbyUI {
       )
       .join("");
 
-    // Update waiting message
+    // Update waiting message and start button
     const waitingMsg = document.getElementById("waiting-message");
+    const startBtn = document.getElementById("btn-start-game");
+    
     if (activePlayers.length < 2) {
       waitingMsg.textContent = "Waiting for another player to join...";
       waitingMsg.style.display = "block";
+      if (startBtn) {
+        startBtn.style.display = "none";
+      }
     } else {
       waitingMsg.textContent = "Ready to start!";
       waitingMsg.style.display = this.isHost ? "block" : "none";
+      if (startBtn) {
+        startBtn.style.display = this.isHost ? "block" : "none";
+      }
     }
   }
 
@@ -981,6 +989,12 @@ Join now: ${inviteUrl}`;
         // Reset forms safely if elements exist
         document.getElementById("form-create-game")?.reset();
         document.getElementById("form-join-game")?.reset();
+
+        // Reset UI elements
+        const startBtn = document.getElementById("btn-start-game");
+        if (startBtn) {
+          startBtn.style.display = "none";
+        }
 
         this.hideLoading();
       } finally {
