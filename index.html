@@ -236,12 +236,12 @@
     <dialog id="virtual-announce-select-dialog" class="app-dialog virtual-announce-dialog">
       <form method="dialog">
         <header>
-          <h2>📢 Select category to Announce</h2>
+          <h2>📢 Select category to announce</h2>
           <button value="cancel" aria-label="Close">×</button>
         </header>
         <div class="dialog-body">
           <p class="dialog-instructions">
-            Choose which category you want to announce for the Announce column:
+            Choose which category you want to announce for the announce column:
           </p>
           <div id="virtual-announce-categories" class="announce-category-list">
             <!-- Populated dynamically -->
@@ -249,6 +249,28 @@
         </div>
         <footer class="dialog-footer">
           <button value="cancel" class="ghost">Cancel</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="announce-confirm-dialog" class="app-dialog confirm-dialog">
+      <form method="dialog">
+        <header>
+          <h2>📢 Confirm announcement</h2>
+          <button value="cancel" aria-label="Close">×</button>
+        </header>
+        <div class="dialog-body">
+          <p id="announce-confirm-message" class="dialog-message">
+            Are you sure you want to announce <strong id="announce-confirm-category"></strong>?
+          </p>
+          <p class="dialog-warning">
+            ⚠️ This action cannot be undone. Once announced, you must fill this category in the
+            announce column.
+          </p>
+        </div>
+        <footer class="dialog-footer">
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="confirm" class="primary">Confirm</button>
         </footer>
       </form>
     </dialog>

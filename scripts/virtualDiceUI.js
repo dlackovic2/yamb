@@ -813,7 +813,7 @@ export class VirtualDiceUI {
         <div class="no-visible-options">
           <p class="no-options">All available scores are zero</p>
           <button class="btn-toggle-zeros" data-action="toggle-zeros">
-            👁️ Show Zero Scores
+            👁️ Show zero scores
           </button>
         </div>
       `;
@@ -1050,6 +1050,42 @@ export class VirtualDiceUI {
    * Prompt for announcement (announce column only)
    */
   /**
+   * Confirm announcement selection
+   */
+  async confirmAnnouncement(categoryLabel, category) {
+    return new Promise((resolve) => {
+      const dialog = document.getElementById("announce-confirm-dialog");
+      if (!dialog) {
+        console.error("Announce confirm dialog not found");
+        resolve(false);
+        return;
+      }
+
+      // Set the category name in the message
+      const categoryElement = document.getElementById("announce-confirm-category");
+      if (categoryElement) {
+        categoryElement.textContent = categoryLabel;
+      }
+
+      // Handle dialog close
+      const handleClose = (e) => {
+        dialog.removeEventListener("close", handleClose);
+        const confirmed = e.target.returnValue === "confirm";
+        resolve(confirmed);
+      };
+
+      dialog.addEventListener("close", handleClose);
+
+      // Show the dialog
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
+    });
+  }
+
+  /**
    * Prompt for announcement
    */
   promptForAnnouncement() {
@@ -1099,15 +1135,18 @@ export class VirtualDiceUI {
     // Add click handlers
     const buttons = categoriesContainer.querySelectorAll(".announce-category-option");
     buttons.forEach((button) => {
-      button.addEventListener(
-        "click",
-        (e) => {
-          const category = e.currentTarget.dataset.category;
+      button.addEventListener("click", async (e) => {
+        const category = e.currentTarget.dataset.category;
+        const categoryLabel = categories.find((c) => c.key === category)?.label || category;
+
+        // Show confirmation dialog
+        const confirmed = await this.confirmAnnouncement(categoryLabel, category);
+
+        if (confirmed) {
           this.announceCategory(category);
           dialog.close("select");
-        },
-        { once: true }
-      );
+        }
+      });
     });
 
     // Show the dialog

@@ -108,7 +108,7 @@ body
     .toast
   ):not(.reconnect-modal):not(.winner-modal):not(#virtual-announce-select-dialog):not(
     #announce-dialog
-  ):not(#straight-dialog) {
+  ):not(#straight-dialog):not(#announce-confirm-dialog) {
   position: relative;
   z-index: 1;
 }
@@ -2149,6 +2149,34 @@ input.score-input.score-highlight {
 
 .announce-category-option:hover .category-icon {
   opacity: 1;
+}
+
+/* Announce confirmation dialog */
+.confirm-dialog .dialog-body {
+  min-width: 320px;
+}
+
+.confirm-dialog .dialog-message {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.confirm-dialog .dialog-message strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.confirm-dialog .dialog-warning {
+  margin: 0.5rem 0 0 0;
+  padding: 0.75rem 1rem;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--text-weak);
+  line-height: 1.5;
 }
 
 /* Back to Virtual Dice FAB (Floating Action Button) */

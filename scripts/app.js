@@ -469,6 +469,10 @@ registerDialog(virtualDiceDialog);
 const virtualAnnounceDialog = document.getElementById("virtual-announce-select-dialog");
 registerDialog(virtualAnnounceDialog);
 
+// Register announce confirmation dialog
+const announceConfirmDialog = document.getElementById("announce-confirm-dialog");
+registerDialog(announceConfirmDialog);
+
 if (announceDialogClear) {
   announceDialogClear.addEventListener("click", () => {
     if (announceDialogInput) {

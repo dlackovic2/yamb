@@ -3777,7 +3777,7 @@ export class OnlineGameManager {
             <div>Players: ${playersList}</div>
           </div>
           <div class="reconnect-actions">
-            <button class="btn-new-game">❌ Start New</button>
+            <button class="btn-new-game">❌ Start new</button>
           </div>
         </div>
       `;
@@ -4260,12 +4260,12 @@ export class OnlineGameManager {
     };
 
     const winnerName = winnerEntry?.name ?? "Unknown";
-    let heading = "Game Complete";
+    let heading = "Game complete";
     let subheading = `${winnerName} wins with ${formatPoints(winnerScore)}.`;
 
     if (viewerEntry) {
       if (viewerIsWinner) {
-        heading = "You Win!";
+        heading = "You won!";
         if (runnerUpEntry) {
           const margin = winnerScore - runnerUpEntry.total;
           if (margin === 0) {
@@ -4278,10 +4278,10 @@ export class OnlineGameManager {
             )} with ${formatPoints(winnerScore)}.`;
           }
         } else {
-          subheading = `You finish with ${formatPoints(winnerScore)}.`;
+          subheading = `You finished with ${formatPoints(winnerScore)}.`;
         }
       } else {
-        heading = "Game Over";
+        heading = "Game over";
         const margin = winnerScore - viewerEntry.total;
         if (margin === 0) {
           subheading = `${winnerName} wins on tie-breakers at ${formatPoints(
@@ -4338,7 +4338,7 @@ export class OnlineGameManager {
             .join("")}
         </div>
         <div class="winner-actions">
-          <button class="btn-lobby">🏠 Back to Lobby</button>
+          <button class="btn-lobby">🏠 Back to lobby</button>
         </div>
       </div>
     `;
