@@ -996,6 +996,31 @@ Join now: ${inviteUrl}`;
           startBtn.style.display = "none";
         }
 
+        // Clear player list
+        const playersContainer = document.getElementById("players-container");
+        if (playersContainer) {
+          playersContainer.innerHTML = "";
+        }
+
+        // Reset player count
+        const playerCount = document.getElementById("player-count");
+        if (playerCount) {
+          playerCount.textContent = "0";
+        }
+
+        // Reset waiting message
+        const waitingMsg = document.getElementById("waiting-message");
+        if (waitingMsg) {
+          waitingMsg.textContent = "";
+          waitingMsg.style.display = "none";
+        }
+
+        // Reset room code display
+        const roomCodeDisplay = document.getElementById("display-room-code");
+        if (roomCodeDisplay) {
+          roomCodeDisplay.textContent = "------";
+        }
+
         this.hideLoading();
       } finally {
         this.cleanupPromise = null;

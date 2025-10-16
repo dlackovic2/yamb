@@ -118,9 +118,9 @@ export class GameModeManager {
     });
 
     // Game mode dialog
-    this.gameModeDialog?.addEventListener("close", (e) => {
+    this.gameModeDialog?.addEventListener("close", async (e) => {
       if (e.target.returnValue === "confirm") {
-        this.handleGameModeConfirm();
+        await this.handleGameModeConfirm();
       }
     });
 
@@ -180,7 +180,7 @@ export class GameModeManager {
   /**
    * Handle game mode confirmation
    */
-  handleGameModeConfirm() {
+  async handleGameModeConfirm() {
     const location =
       document.querySelector('input[name="location"]:checked')?.value || GameMode.LOCATION.LOCAL;
     const dice =
@@ -199,14 +199,14 @@ export class GameModeManager {
       updates.playerId = generatePlayerId();
     }
 
-    // Clean up any active online game
+    // Clean up any active online game - WAIT for cleanup to complete
     if (this.onlineGameManager) {
-      this.onlineGameManager.cleanup();
+      await this.onlineGameManager.cleanup();
     }
 
-    // Clean up any active lobby session
+    // Clean up any active lobby session - WAIT for cleanup to complete
     if (this.onlineLobby) {
-      this.onlineLobby.cleanup();
+      await this.onlineLobby.cleanup();
     }
 
     this.mode = updateGameMode(updates);
@@ -288,15 +288,15 @@ export class GameModeManager {
     this.gameModeDialog?.showModal();
   }
 
-  openJoinOnlineGame() {
-    // Clean up any active online game
+  async openJoinOnlineGame() {
+    // Clean up any active online game - WAIT for cleanup to complete
     if (this.onlineGameManager) {
-      this.onlineGameManager.cleanup();
+      await this.onlineGameManager.cleanup();
     }
 
-    // Clean up any active lobby session
+    // Clean up any active lobby session - WAIT for cleanup to complete
     if (this.onlineLobby) {
-      this.onlineLobby.cleanup();
+      await this.onlineLobby.cleanup();
     }
 
     const updates = {

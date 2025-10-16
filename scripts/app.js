@@ -759,9 +759,9 @@ function checkForInviteLink() {
 
   if (roomCode && roomCode.trim()) {
     // Auto-open join flow with pre-filled room code
-    setTimeout(() => {
+    setTimeout(async () => {
       if (gameModeManager?.openJoinOnlineGame) {
-        gameModeManager.openJoinOnlineGame();
+        await gameModeManager.openJoinOnlineGame();
         // Pre-fill the room code
         setTimeout(() => {
           const roomCodeInput = document.getElementById("input-room-code");
@@ -1036,7 +1036,7 @@ function attachEvents() {
       return;
     }
 
-    gameModeManager.openJoinOnlineGame();
+    await gameModeManager.openJoinOnlineGame();
   });
 
   settingsButton?.addEventListener("click", openSettingsDialog);
