@@ -790,7 +790,7 @@ export class OnlineLobbyUI {
     // Update waiting message and start button
     const waitingMsg = document.getElementById("waiting-message");
     const startBtn = document.getElementById("btn-start-game");
-    
+
     if (activePlayers.length < 2) {
       waitingMsg.textContent = "Waiting for another player to join...";
       waitingMsg.style.display = "block";
