@@ -199,8 +199,14 @@ export class GameModeManager {
       updates.playerId = generatePlayerId();
     }
 
+    // Clean up any active online game
     if (this.onlineGameManager) {
       this.onlineGameManager.cleanup();
+    }
+
+    // Clean up any active lobby session
+    if (this.onlineLobby) {
+      this.onlineLobby.cleanup();
     }
 
     this.mode = updateGameMode(updates);
@@ -283,8 +289,14 @@ export class GameModeManager {
   }
 
   openJoinOnlineGame() {
+    // Clean up any active online game
     if (this.onlineGameManager) {
       this.onlineGameManager.cleanup();
+    }
+
+    // Clean up any active lobby session
+    if (this.onlineLobby) {
+      this.onlineLobby.cleanup();
     }
 
     const updates = {

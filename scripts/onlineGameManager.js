@@ -31,7 +31,7 @@ import {
 } from "./scoring.js";
 import { GameMode } from "./gameMode.js";
 
-globalThis.__YAMB_DEBUG = true;
+globalThis.__YAMB_DEBUG = false;
 const TOTAL_INPUT_CELLS = columns.length * categories.filter((category) => category.input).length;
 const DEBUG_LOGS_ENABLED = Boolean(globalThis?.__YAMB_DEBUG ?? import.meta?.env?.DEV ?? false);
 const debugLog = (...args) => {
@@ -1347,6 +1347,11 @@ export class OnlineGameManager {
   }
 
   queuePresenceStatusUpdate(connectedIds) {
+    // Early exit if game is being cleaned up
+    if (!this.gameId) {
+      return;
+    }
+
     this.pendingPresenceIds = connectedIds;
 
     if (this.presenceUpdateInFlight) {
@@ -1366,6 +1371,12 @@ export class OnlineGameManager {
     Promise.resolve()
       .then(async () => {
         while (this.pendingPresenceIds) {
+          // Check again inside the loop in case cleanup happened
+          if (!this.gameId) {
+            this.pendingPresenceIds = null;
+            break;
+          }
+
           const idsToProcess = this.pendingPresenceIds;
           this.pendingPresenceIds = null;
           try {
@@ -3587,21 +3598,45 @@ export class OnlineGameManager {
    * Cleanup when leaving game
    */
   cleanup() {
+    // Set flags immediately to prevent any new operations
+    const wasInGame = Boolean(this.gameId && this.playerId);
+    const finalGameId = this.gameId;
+    const finalPlayerId = this.playerId;
+
+    // Mark current subscription as stale IMMEDIATELY to ignore any pending events
+    if (this.activeRealtimeSubscriptionId) {
+      this.staleRealtimeSubscriptionIds.add(this.activeRealtimeSubscriptionId);
+    }
+
+    // Clear game IDs FIRST to prevent any new operations from starting
+    this.gameId = null;
+    this.playerId = null;
+    this.rejoiningGame = false;
+
+    // Stop all monitoring and timers
     this.restoreVirtualDiceCallbacks();
     this.stopConnectionHeartbeat();
     this.stopPresenceMonitor();
 
+    // Cancel any pending presence updates
+    this.pendingPresenceIds = null;
+    this.presenceUpdateInFlight = false;
+
+    // Unsubscribe from realtime channels
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
     this.activeRealtimeSubscriptionId = null;
     this.channelReadyNotified = false;
-    this.rejoiningGame = false;
-    this.logRealtimeEvent("cleanup-complete");
+    // Send final disconnect status if we were in a game
+    if (wasInGame && finalGameId && finalPlayerId) {
+      updatePlayerConnectionStatus(finalGameId, finalPlayerId, "disconnected").catch(() => {
+        // Ignore errors during cleanup
+      });
+    }
 
-    this.gameId = null;
-    this.playerId = null;
+    this.logRealtimeEvent("cleanup-complete");
     this.players = [];
     this.currentTurnPlayerId = null;
     this.isMyTurn = false;

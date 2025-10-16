@@ -63,11 +63,11 @@ export class OnlineLobbyUI {
           <div id="lobby-choice" class="lobby-section">
             <p class="lobby-description">Play Yamb with a friend online in real-time!</p>
             <div class="lobby-buttons">
-              <button id="btn-create-game" class="btn btn-primary btn-large">
+              <button id="btn-create-game" class="btn btn-primary btn-large primary">
                 <span class="btn-icon">➕</span>
                 Create new game
               </button>
-              <button id="btn-join-game" class="btn btn-secondary btn-large">
+              <button id="btn-join-game" class="btn btn-secondary btn-large ghost">
                 <span class="btn-icon">🔗</span>
                 Join game
               </button>
@@ -90,7 +90,7 @@ export class OnlineLobbyUI {
                   required
                 />
               </div>
-              <button type="submit" class="btn btn-primary btn-large">
+              <button type="submit" class="btn btn-primary btn-large primary">
                 Create game room
               </button>
             </form>
@@ -123,7 +123,7 @@ export class OnlineLobbyUI {
                   required
                 />
               </div>
-              <button type="submit" class="btn btn-primary btn-large">
+              <button type="submit" class="btn btn-primary btn-large primary">
                 Join game
               </button>
             </form>
@@ -151,10 +151,10 @@ export class OnlineLobbyUI {
             </div>
             
             <div class="waiting-actions">
-              <button class="btn btn-primary btn-large" id="btn-start-game" style="display: none;">
+              <button class="btn btn-primary btn-large primary" id="btn-start-game" style="display: none;">
                 Start game
               </button>
-              <button class="btn btn-secondary" id="btn-leave-game">
+              <button class="btn btn-secondary ghost" id="btn-leave-game">
                 Leave game
               </button>
             </div>
@@ -325,6 +325,16 @@ export class OnlineLobbyUI {
     const hostName = document.getElementById("input-host-name").value.trim();
     if (!hostName) return;
 
+    // Clean up any existing lobby session before creating a new game
+    if (this.currentGameId && this.currentPlayerId) {
+      try {
+        await leaveGame(this.currentGameId, this.currentPlayerId);
+      } catch (error) {
+        console.warn("Failed to leave previous game before creating new one:", error);
+      }
+      await this.cleanup();
+    }
+
     this.showLoading();
 
     try {
@@ -364,6 +374,16 @@ export class OnlineLobbyUI {
     const roomCode = document.getElementById("input-room-code").value.trim();
 
     if (!playerName || !roomCode) return;
+
+    // Clean up any existing lobby session before joining a new game
+    if (this.currentGameId && this.currentPlayerId) {
+      try {
+        await leaveGame(this.currentGameId, this.currentPlayerId);
+      } catch (error) {
+        console.warn("Failed to leave previous game before joining new one:", error);
+      }
+      await this.cleanup();
+    }
 
     this.showLoading();
     document.getElementById("join-error").style.display = "none";
