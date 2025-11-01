@@ -58,7 +58,7 @@ CREATE TABLE games (
   status VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'in_progress', 'completed', 'abandoned')),
   current_turn_player_id UUID,
   current_round INTEGER DEFAULT 1,
-  max_players INTEGER DEFAULT 2,
+  max_players INTEGER DEFAULT 6,
   game_mode JSONB NOT NULL DEFAULT '{
     "location": "online",
     "dice": "virtual",

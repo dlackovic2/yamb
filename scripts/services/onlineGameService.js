@@ -75,7 +75,7 @@ export async function createGame(hostName, gameMode = {}) {
         host_player_id: null, // Will be set after creating player
         status: "waiting",
         game_mode: defaultGameMode,
-        max_players: 2,
+        max_players: 6,
       })
       .select()
       .single();
