@@ -146,7 +146,7 @@ export class OnlineLobbyUI {
             </div>
             
             <div class="players-list">
-              <h4>Players (<span id="player-count">0</span>/2)</h4>
+              <h4>Players (<span id="player-count">0</span>/6)</h4>
               <div id="players-container"></div>
             </div>
             
