@@ -2,7 +2,7 @@
 
 A minimal-yet-polished web app for manually logging Yamb dice results. Roll your own dice, drop the numbers into the grid, and the sheet keeps every subtotal, bonus, and grand total fresh for you.
 
-**NEW: Virtual Dice & Game Modes!** Choose between physical dice or virtual on-screen dice rolling. Play locally or prepare for online multiplayer with friends!
+**NEW: Virtual Dice & Online Multiplayer!** Choose between physical dice or virtual on-screen dice rolling. Play locally or online with up to 6 players!
 
 > **Key scoring rules baked in**
 >
@@ -44,7 +44,7 @@ When you enable **Virtual Dice Mode**, you get:
 ### Location Modes
 
 - **🏠 Local**: Play on a single device (default)
-- **🌐 Online**: Play with remote friends via room code—works with both virtual dice and manual score entry
+- **🌐 Online**: Play with remote friends via room code—supports 2-6 players with both virtual dice and manual score entry
 
 ### Dice Modes
 
@@ -127,22 +127,29 @@ Virtual dice use **cryptographic randomness** via the Web Crypto API (`crypto.ge
 └── README.md
 ```
 
-## 🌐 Online Features (Coming Soon)
+## 🌐 Online Multiplayer
 
-The groundwork for online multiplayer is in place! Future features will include:
+Online multiplayer is now available! Play Yamb with up to 5 friends (6 players total) in real-time.
+
+### Features
 
 - **Room System**: Create or join game rooms with shareable codes
+- **2-6 Players**: Support for 2 to 6 players in a single game
 - **Turn Management**: Track whose turn it is in real-time
 - **Live Updates**: See other players' progress as they play
 - **Player Status**: View when others are rolling, thinking, or have finished
-- **Spectator Mode**: Watch games in progress
+- **Connection Monitoring**: See when players go offline or reconnect
 
-To prepare for online features, the app includes Supabase integration. Create a `.env.local` file with:
+### Getting Started
+
+To enable online features, the app requires Supabase integration. Create a `.env.local` file with:
 
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+See `SUPABASE_SETUP.md` for detailed setup instructions.
 
 ## 🧪 Quality gates
 
