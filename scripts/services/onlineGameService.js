@@ -517,7 +517,7 @@ export async function updatePlayerConnectionStatus(gameId, playerId, status) {
       status,
       error,
     });
-    throw new Error("Failed to update player connection status.");
+    throw new Error("Failed to update player connection status.", { cause: error });
   }
 }
 
