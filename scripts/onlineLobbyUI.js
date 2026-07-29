@@ -654,7 +654,7 @@ export class OnlineLobbyUI {
 
       const cachedStatus =
         this.presenceStatusCache.get(player.id) ?? player.connection_status ?? "connected";
-      let desiredStatus = cachedStatus;
+      let desiredStatus;
       const lastSeenAt =
         typeof player.last_seen_at === "string" ? Date.parse(player.last_seen_at) : null;
 

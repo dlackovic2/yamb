@@ -1414,7 +1414,7 @@ export class OnlineGameManager {
       const cachedPresence =
         this.presenceStatusCache.get(playerId) ?? player.connection_status ?? "connected";
       const previousStatus = this.playerStatusMap.get(playerId) ?? cachedPresence;
-      let desiredStatus = cachedPresence;
+      let desiredStatus;
 
       if (playerId === this.playerId) {
         desiredStatus = this.localConnectionStatus;
